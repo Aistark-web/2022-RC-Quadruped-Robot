@@ -21,7 +21,8 @@ PID MOTOR_PID[8];														//PID数据
 PID PID_P[8];																//组成此电机P部分
 PID PID_ID[8];															//组成此电机I、D部分
 Ramp_Typedef Init_Ramp;											//初始化Ramp
-Ramp_Typedef Step_Ramp;											//原地踏步Ramp
+Ramp_Typedef Shutdown_Ramp;									//关机Ramp
+Ramp_Typedef Step_Ramp[4];											//原地踏步Ramp
 Ramp_Typedef Straight_Ramp[4];							//直走Ramp
 Ramp_Typedef Turn_Ramp[4];									//拐弯Ramp
 Ramp_Typedef Circle_Ramp[4];								//原地转Ramp
@@ -89,7 +90,10 @@ void Robot_init()
 	
 	/* 斜坡初始化 */
 	Init_Ramp.RampTime = 10000;
+	Shutdown_Ramp.RampTime = 2000;
+	
 	for(uint8_t i = 0;i<4;i++){
+		Step_Ramp[i].RampTime = 300;
 		Straight_Ramp[i].RampTime = 500;
 		Turn_Ramp[i].RampTime = 500;
 		Circle_Ramp[i].RampTime = 400;

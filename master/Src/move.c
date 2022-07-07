@@ -1,7 +1,8 @@
 #include "move.h"
 
 extern Ramp_Typedef Init_Ramp;										//³õÊ¼»¯Ramp
-extern Ramp_Typedef Step_Ramp;										//Ô­µØÌ¤²½Ramp
+extern Ramp_Typedef Shutdown_Ramp;								//¹Ø»úRamp
+extern Ramp_Typedef Step_Ramp[4];										//Ô­µØÌ¤²½Ramp
 extern Ramp_Typedef Straight_Ramp[4];							//Ö±×ßRamp
 extern Ramp_Typedef Turn_Ramp[4];									//¹ÕÍäRamp
 extern Ramp_Typedef Circle_Ramp[4];								//Ô­µØ×ªRamp
@@ -28,6 +29,7 @@ uint8_t Motor_Mode_data[8] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFC};						//µ
 /********************
 		Mode:    Robot_Init_Mode -> Robot_Open_Motor_Mode -> Robot_Start_Mode -> Robot_Move_Mode							
 */
+
 void Robot_Check(Robot_Handle *Robot,Remote_DataPack_Handle *Remote)
 {
 	if(Robot->Change_Mode == 0){									//ÕıÔÚ¸Ä±äÄ£Ê½Ê±ÖÃ1£¬Ëø¶¨´Ë½çÃæ
@@ -51,10 +53,19 @@ void Robot_Check(Robot_Handle *Robot,Remote_DataPack_Handle *Remote)
 			}
 			case Robot_Move_Mode:{
 				//TODO	ÔË¶¯ĞĞÎª¸Ä±ä
+				static uint32_t count;
 				if(Robot->State == Robot_Stop_State){				//Í£Ö¹Ê±µ÷¶È¶¯×÷
 					if(Robot->Move == Robot_Stop_Move){
+						if(Remote_DataPack.Key.Left_Rocker && Remote_DataPack.Key.Right_Rocker){
+							if(++count >= 160){									//´óÔ¼2s
+								count = 0;
+								Robot->Mode = Robot_Shutdown_Mode;		//½øÈë¹Ø»úÄ£Ê½
+								Robot->Change_Mode = 1;
+							}
+							break;
+						}
 						/* Ö±ĞĞ/¹ÕÍä */
-						if(Remote_DataPack.L_Y_rocker < 500 || Remote_DataPack.L_Y_rocker > 3500){																							
+						else if(Remote_DataPack.L_Y_rocker < 500 || Remote_DataPack.L_Y_rocker > 3500){																							
 							if(Remote_DataPack.R_X_rocker > 500 && Remote_DataPack.R_X_rocker < 3500){			//ÅĞ¶ÏÎªÖ±ĞĞ¶¯×÷
 								Robot->Move = Robot_Straignt_Move;
 								Robot->State = Robot_Running_State;
@@ -63,19 +74,31 @@ void Robot_Check(Robot_Handle *Robot,Remote_DataPack_Handle *Remote)
 								Robot->Move = Robot_Turn_Move;
 								Robot->State = Robot_Running_State;																																												
 							}
+							break;
 						}
 						/* ×ÔĞı */
 						else if(Remote_DataPack.L_X_rocker < 500 || Remote_DataPack.L_X_rocker > 3500){
 							Robot->Move = Robot_Circle_Move;
 							Robot->State = Robot_Running_State;
+							break;
 						}
-						/* ¸ßÀ¸ÌøÔ¾ */
+//						/* ¸ßÀ¸ÌøÔ¾ */
 //						else if(Remote_Last_DataPack.Key.Right_Key_Up && Remote_DataPack.Key.Right_Key_Up == 0){
 //							Robot->Move = Robot_Jump_Move;
 //							Robot->State = Robot_Running_State;
 //						}
+						else if(Remote_DataPack.Key.Left_Key_Right){
+							Robot->Move = Robot_Step_Move;
+							Robot->State  = Robot_Running_State;
+						}
+						else{
+							count = 0;
+						}
 					}
 				}
+				break;
+			}
+			case Robot_Shutdown_Mode:{
 				break;
 			}
 		}
@@ -139,6 +162,10 @@ void Robot_Move_Master(Robot_Handle *Robot)
 				case Robot_Stop_Move:{
 					break;
 				}
+				case Robot_Step_Move:{
+					Robot_Move_Step(Robot,Leg,Step_Ramp,&IMU);
+					break;
+				}
 				case Robot_Straignt_Move:{
 					Robot_Move_Straight(Robot,Leg,Straight_Ramp,&IMU);
 					break;
@@ -158,6 +185,24 @@ void Robot_Move_Master(Robot_Handle *Robot)
 				case Robot_Climb_Move:{
 					
 					break;
+				}
+				case Robot_Double_bridge_Move:{
+					break;
+				}
+				case Robot_Seesaw_Move:{
+					break;
+				}
+				case Robot_Stair_Move:{
+					break;
+				}
+			}
+			break;
+		}
+		case Robot_Shutdown_Mode:{
+			static uint8_t shutdown_flag;
+			if(!shutdown_flag){
+				if(Leg_Shutdown_Ramp(Leg,&Shutdown_Ramp)){
+					shutdown_flag = 1;
 				}
 			}
 			break;
@@ -220,6 +265,8 @@ void Robot_Move_Straight(Robot_Handle *Robot,Leg_Handle *Leg,Ramp_Typedef *Ramp,
 		}
 	}
 }
+
+
 /* ¹ÕÍä */
 void Robot_Move_Turn(Robot_Handle *Robot,Leg_Handle *Leg,Ramp_Typedef *Ramp,Dev_Handle *IMU){
 	static uint8_t start_flag;
@@ -293,6 +340,50 @@ void Robot_Move_Turn(Robot_Handle *Robot,Leg_Handle *Leg,Ramp_Typedef *Ramp,Dev_
 	}
 }
 
+/* Ì¤²½ */
+void Robot_Move_Step(Robot_Handle *Robot,Leg_Handle *Leg,Ramp_Typedef *Ramp,Dev_Handle *IMU)
+{
+	static uint8_t Part_State;
+	static float step_z = 20.0f;
+	if(Part_State == 0){
+		Leg_Point_RTO_Ramp(0,step_z,&Leg[0],&Ramp[0]);
+		Leg_Point_RTO_Ramp(0,step_z,&Leg[3],&Ramp[3]);
+		if(Slope(&Ramp[0]) ==1.0f && Slope(&Ramp[3]) == 1.0f){
+			ResetSlope(&Ramp[0]);
+			ResetSlope(&Ramp[3]);
+			Part_State = 1;
+		}
+	}
+	else if(Part_State == 1){
+		Leg_Point_RTO_Ramp(0,-step_z,&Leg[0],&Ramp[0]);
+		Leg_Point_RTO_Ramp(0,-step_z,&Leg[3],&Ramp[3]);
+		if(Slope(&Ramp[0]) == 1.0f && Slope(&Ramp[3]) == 1.0f){
+			ResetSlope(&Ramp[0]);
+			ResetSlope(&Ramp[3]);
+			Part_State = 2;
+		}
+	}
+	else if(Part_State == 2){
+		Leg_Point_RTO_Ramp(0,step_z,&Leg[1],&Ramp[1]);
+		Leg_Point_RTO_Ramp(0,step_z,&Leg[2],&Ramp[2]);
+		if(Slope(&Ramp[1]) == 1.0f && Slope(&Ramp[2]) == 1.0f){
+			ResetSlope(&Ramp[1]);
+			ResetSlope(&Ramp[2]);
+			Part_State = 3;
+		}
+	}
+	else if(Part_State == 3){
+		Leg_Point_RTO_Ramp(0,-step_z,&Leg[1],&Ramp[1]);
+		Leg_Point_RTO_Ramp(0,-step_z,&Leg[2],&Ramp[2]);
+		if(Slope(&Ramp[1]) == 1.0f && Slope(&Ramp[2]) == 1.0f){
+			ResetSlope(&Ramp[1]);
+			ResetSlope(&Ramp[2]);
+			Part_State = 0;
+			Robot_Move_State_Reset_Stop(Robot);											//×´Ì¬ÖÃÎ»
+		}
+	}
+	
+}
 /* Ô­µØ×Ô×ª */
 void Robot_Move_Circle(Robot_Handle *Robot,Leg_Handle *Leg,Ramp_Typedef *Ramp,Dev_Handle *IMU){
 	static uint8_t start_flag;
@@ -349,16 +440,16 @@ void Robot_Move_Circle(Robot_Handle *Robot,Leg_Handle *Leg,Ramp_Typedef *Ramp,De
 
 /* ÌøÔ¾ */
 void Robot_Move_Jump(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IMU){
-	static float ready_y = -60.0f;								//×¼±¸ÆğÌøÎ»ÖÃy						//Ò»ÏÂ¼¸¸öÏµÊı¾ùÓĞ¹ØÏµ
-	static float ready_z = 150.0f;								//×¼±¸ÆğÌøÎ»ÖÃz
-	static float jump_up_y	= -60.0f;							//ÆğÌøÎ»ÖÃy
-	static float jump_up_z  = -150.0f;						//ÆğÌøÎ»ÖÃz
-	static float jump_up_back_y = 120.0f;					//ÆğÌøºóÍÈÊÕ»Ø
-	static float jump_up_back_z = 150.0f;					//ÌøÔ¾ºóÍÈÊÕ»Ø
-	static float jump_down_buffer_y = 120.0f;			//ÌøÔ¾»º³åy
-	static float jump_down_buffer_z = -150.0f;		//ÌøÔ¾»º³åz
-	static float jump_back_y = -120.0f;						//·µ»ØÔ­Î»
-	static float jump_back_z = 0.0f;							//·µ»ØÔ­Î»
+	static float ready_y = -60.0f;								//×¼±¸ÆğÌøÎ»ÖÃy		-60.0f				//ÒÔÏÂ¼¸¸öÏµÊı¾ùÓĞ¹ØÏµ
+	static float ready_z = 90.0f;									//×¼±¸ÆğÌøÎ»ÖÃz		150.0f
+	static float jump_up_y	= -60.0f;							//ÆğÌøÎ»ÖÃy				-60.0f
+	static float jump_up_z  = -220.0f;						//ÆğÌøÎ»ÖÃz				-150.0f
+	static float jump_up_back_y = 120.0f;					//ÆğÌøºóÍÈÊÕ»Ø			120.0f
+	static float jump_up_back_z = 220.0f;					//ÌøÔ¾ºóÍÈÊÕ»Ø			150.0f
+	static float jump_down_buffer_y = 120.0f;			//ÌøÔ¾»º³åy				120.0f
+	static float jump_down_buffer_z = -180.0f;		//ÌøÔ¾»º³åz				-150.0f
+	static float jump_back_y = -120.0f;						//·µ»ØÔ­Î»					-120.0f
+	static float jump_back_z = 30.0f;							//·µ»ØÔ­Î»					0.0f
 	static float Part_State;											//×´Ì¬
 	/* ×¼±¸ÆğÌø */
 	if(Part_State == 0){													
@@ -376,6 +467,7 @@ void Robot_Move_Jump(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IMU){
 			}
 		}
 	}
+	
 	/* ÆğÌø */
 	else if(Part_State == 1){							
 		if(!Jump_up_Ramp.flag){
@@ -438,6 +530,7 @@ void Robot_Move_Jump(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IMU){
 			ResetSlope(&Jump_back_buffer_Ramp[1]);
 			ResetSlope(&Jump_back_buffer_Ramp[2]);
 			ResetSlope(&Jump_back_buffer_Ramp[3]);
+			Robot_Move_State_Reset_Stop(Robot);
 			Part_State = 0;
 		}
 	}

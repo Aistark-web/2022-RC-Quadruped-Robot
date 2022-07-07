@@ -1,5 +1,6 @@
 #include "leg.h"
 
+#define LEG_DBUG														1		//是否开启悬挂调试
 
 #define LEG_Base_y                          0.0f//初始化y坐标
 #define LEG_Base_z                          0.0f//初始化z坐标
@@ -10,16 +11,49 @@
 
    
 
-#define DEFAULT_theta1															60.0f/180.0f*PI//自启动后的theta1   						//单位：度(°)
-#define DEFAULT_theta2															60.0f/180.0f*PI//自启动后的theta2								//以下均为度数
-#define FRONT_LEFT_LEG_initial_theta1               85.59f/180.0f*PI//前左腿未自启动前初始化theta1  85.59
-#define FRONT_LEFT_LEG_initial_theta2               201.06f/180.0f*PI//前左腿未自启动前初始化theta2 201.06
-#define FRONT_RIGHT_LEG_initial_theta1              85.59f/180.0f*PI//前右腿未自启动前初始化theta1  85.59
-#define FRONT_RIGHT_LEG_initial_theta2              201.06f/180.0f*PI//前右腿未自启动前初始化theta2 201.06
-#define BACK_LEFT_LEG_initial_theta1                68.12f/180.0f*PI//后左腿未自启动前初始化theta1  68.12
-#define BACK_LEFT_LEG_initial_theta2                218.87f/180.0f*PI//后左腿未自启动前初始化theta2 218.87
-#define BACK_RIGHT_LEG_initial_theta1               68.12f/180.0f*PI//后右腿未自启动前初始化theta1  68.12
-#define BACK_RIGHT_LEG_initial_theta2               218.87f/180.0f*PI//后右腿未自启动前初始化theta2 218.87
+#define DEFAULT_theta1															90.0f/180.0f*PI//自启动后的theta1   60.0f							//单位：弧度
+#define DEFAULT_theta2															90.0f/180.0f*PI//自启动后的theta2	  60.0f							//以下均为弧度
+
+#if LEG_DBUG
+/* 架着调试时 */
+#define FRONT_LEFT_LEG_initial_theta1               (0.0f/180.0f*PI)//前左腿未自启动前初始化theta1  85.59
+#define FRONT_LEFT_LEG_initial_theta2               (0.0f/180.0f*PI)//前左腿未自启动前初始化theta2 201.06
+#define FRONT_RIGHT_LEG_initial_theta1              (0.0f/180.0f*PI)//前右腿未自启动前初始化theta1  85.59
+#define FRONT_RIGHT_LEG_initial_theta2              (0.0f/180.0f*PI)//前右腿未自启动前初始化theta2 201.06
+#define BACK_LEFT_LEG_initial_theta1                (0.0f/180.0f*PI)//后左腿未自启动前初始化theta1  68.12
+#define BACK_LEFT_LEG_initial_theta2                (0.0f/180.0f*PI)//后左腿未自启动前初始化theta2 218.87
+#define BACK_RIGHT_LEG_initial_theta1               (0.0f/180.0f*PI)//后右腿未自启动前初始化theta1  68.12
+#define BACK_RIGHT_LEG_initial_theta2               (0.0f/180.0f*PI)//后右腿未自启动前初始化theta2 218.87
+#define FRONT_LEFT_LEG_shutdown_theta1							(5.0f/180.0f*PI)//前左腿关机角度
+#define FRONT_LEFT_LEG_shutdown_theta2							(5.0f/180.0f*PI)//
+#define FRONT_RIGHT_LEG_shutdown_theta1							(5.0f/180.0f*PI)
+#define FRONT_RIGHT_LEG_shutdown_theta2							(5.0f/180.0f*PI)
+#define BACK_LEFT_LEG_shutdown_theta1								(5.0f/180.0f*PI)
+#define BACK_LEFT_LEG_shutdown_theta2								(5.0f/180.0f*PI)
+#define BACK_RIGHT_LEG_shutdown_theta1							(5.0f/180.0f*PI)
+#define BACK_RIGHT_LEG_shutdown_theta2							(5.0f/180.0f*PI)
+
+#else
+
+/* 下地调试时 */
+#define FRONT_LEFT_LEG_initial_theta1               (85.59f/180.0f*PI)	//前左腿未自启动前初始化theta1  85.59
+#define FRONT_LEFT_LEG_initial_theta2               (201.06f/180.0f*PI)	//前左腿未自启动前初始化theta2 201.06
+#define FRONT_RIGHT_LEG_initial_theta1              (85.59f/180.0f*PI)	//前右腿未自启动前初始化theta1  85.59
+#define FRONT_RIGHT_LEG_initial_theta2              (201.06f/180.0f*PI)	//前右腿未自启动前初始化theta2 201.06
+#define BACK_LEFT_LEG_initial_theta1                (68.12f/180.0f*PI)	//后左腿未自启动前初始化theta1  68.12
+#define BACK_LEFT_LEG_initial_theta2                (218.87f/180.0f*PI)	//后左腿未自启动前初始化theta2 218.87
+#define BACK_RIGHT_LEG_initial_theta1               (68.12f/180.0f*PI)	//后右腿未自启动前初始化theta1  68.12
+#define BACK_RIGHT_LEG_initial_theta2               (218.87f/180.0f*PI)	//后右腿未自启动前初始化theta2 218.87
+#define FRONT_LEFT_LEG_shutdown_theta1							(80.0f/180.0f*PI)		//前左腿关机theta1
+#define FRONT_LEFT_LEG_shutdown_theta2							(195.0f/180.0f*PI)	//前左腿关机theta2
+#define FRONT_RIGHT_LEG_shutdown_theta1							(80.0f/180.0f*PI)		//前右腿关机theta1
+#define FRONT_RIGHT_LEG_shutdown_theta2							(195.0f/180.0f*PI)	//前右腿关机theta2
+#define BACK_LEFT_LEG_shutdown_theta1								(80.0f/180.0f*PI)		//后左腿关机theta1
+#define BACK_LEFT_LEG_shutdown_theta2								(195.0f/180.0f*PI)	//后左腿关机theta2
+#define BACK_RIGHT_LEG_shutdown_theta1							(80.0f/180.0f*PI)		//后右腿关机theta1
+#define BACK_RIGHT_LEG_shutdown_theta2							(195.0f/180.0f*PI)	//后右腿关机theta2
+
+#endif
 
 void Leg_binding(Leg_Handle *Leg,HT_03_MOTOR_Handle *Motor1,HT_03_MOTOR_Handle *Motor2,LEG_ID_ENUM Leg_ID)
 {
@@ -30,11 +64,6 @@ void Leg_binding(Leg_Handle *Leg,HT_03_MOTOR_Handle *Motor1,HT_03_MOTOR_Handle *
 
 void Leg_get(Leg_Handle *Leg)
 {
-	#if ONE_LEG
-	Leg->theta1 = Leg->MOTOR_2->Current.C_P + 45.0f/180.0f*PI;
-	Leg->theta2 = Leg->Motor_1->Current.C_P + 45.0f/180.0f*PI;
-	#else
-
     switch(Leg->Leg_ID){
         case FRONT_LEFT_LEG_ID:{
             Leg->theta1 = Leg->Motor_2->Current.C_P + FRONT_LEFT_LEG_initial_theta1;
@@ -57,7 +86,6 @@ void Leg_get(Leg_Handle *Leg)
             break;
         }
     }
-    #endif
     Leg->Phi = (Leg->theta1 + Leg->theta2) / 2.0f;
     Leg->Psi = (Leg->theta1 - Leg->theta2) / 2.0f;
     #if defined(ARM_MATH_CM4)
@@ -124,8 +152,10 @@ uint8_t Leg_Move_Init(Leg_Handle *Leg,Ramp_Typedef *ramp){
     Leg[i].Infer_z = LEG_Base_z - Leg[i].Infer_L * arm_cos_f32(Psi);
 		Leg_Angle_Control(&Leg[i]);
 	}
-	if(ramp_t == 1.0f)
+	if(ramp_t == 1.0f){
+		ResetSlope(ramp);
 		return 1;
+	}
 	else 
 		return 0;
 }
@@ -144,11 +174,10 @@ uint8_t Leg_Reset_Ramp(Leg_Handle *Leg,Ramp_Typedef *Ramp)
 		}
 	}
 	ramp_t = Slope(Ramp);
-	for(uint8_t i =0;i<4;i++){
+	
+	for(uint8_t i=0;i<4;i++){
 		Leg[i].Infer_theta1 = initial_theta1[i] + (DEFAULT_theta1 - initial_theta1[i]) * ramp_t;
 		Leg[i].Infer_theta2 = initial_theta2[i] + (DEFAULT_theta2 - initial_theta2[i]) * ramp_t;
-	}
-	for(uint8_t i=0;i<4;i++){
     Phi = (Leg[i].Infer_theta1 + Leg[i].Infer_theta2) / 2.0f;
     Psi = (Leg[i].Infer_theta1 - Leg[i].Infer_theta2) / 2.0f;
 		Leg[i].Infer_L = Solve_One_Quadratic_Equation(1.0f,-2.0f*LEG_L1*arm_cos_f32(Phi),LEG_L1*LEG_L1-LEG_L2*LEG_L2);
@@ -156,8 +185,46 @@ uint8_t Leg_Reset_Ramp(Leg_Handle *Leg,Ramp_Typedef *Ramp)
     Leg[i].Infer_z = LEG_Base_z - Leg[i].Infer_L * arm_cos_f32(Psi);
 		Leg_Angle_Control(&Leg[i]);
 	}
-	if(ramp_t == 1.0f)
+	if(ramp_t == 1.0f){
+		ResetSlope(Ramp);
 		return 1;
+	}
+	else
+		return 0;
+}
+
+uint8_t Leg_Shutdown_Ramp(Leg_Handle *Leg,Ramp_Typedef *Ramp){
+	float ramp_t;
+	static float initial_theta1[4];
+	static float initial_theta2[4];
+	static float Psi,Phi;
+	if(!Ramp->flag){
+		for(uint8_t i = 0;i<4;i++){
+			initial_theta1[i] = Leg[i].Infer_theta1;
+			initial_theta2[i] = Leg[i].Infer_theta2;
+		}
+	}
+	ramp_t = Slope(Ramp);
+	Leg[0].Infer_theta1 = initial_theta1[0] + (FRONT_LEFT_LEG_shutdown_theta1 	- initial_theta1[0]) * ramp_t;
+	Leg[0].Infer_theta2 = initial_theta2[0] + (FRONT_LEFT_LEG_shutdown_theta2		- initial_theta2[0]) * ramp_t;
+	Leg[1].Infer_theta1 = initial_theta1[1]	+	(FRONT_RIGHT_LEG_shutdown_theta1 	- initial_theta1[1]) * ramp_t;
+	Leg[1].Infer_theta2 = initial_theta2[1] + (FRONT_RIGHT_LEG_shutdown_theta2 	- initial_theta2[1]) * ramp_t;
+	Leg[2].Infer_theta1 = initial_theta1[2] + (BACK_LEFT_LEG_shutdown_theta1 		- initial_theta1[2]) * ramp_t;
+	Leg[2].Infer_theta2 = initial_theta2[2] + (BACK_LEFT_LEG_shutdown_theta2 		- initial_theta2[2]) * ramp_t;
+	Leg[3].Infer_theta1 = initial_theta1[3] + (BACK_RIGHT_LEG_shutdown_theta1 	- initial_theta1[3]) * ramp_t;
+	Leg[3].Infer_theta2 = initial_theta2[3] + (BACK_RIGHT_LEG_shutdown_theta2 	- initial_theta2[3]) * ramp_t;
+	for(uint8_t i = 0;i<4;i++){
+    Phi = (Leg[i].Infer_theta1 + Leg[i].Infer_theta2) / 2.0f;
+    Psi = (Leg[i].Infer_theta1 - Leg[i].Infer_theta2) / 2.0f;
+		Leg[i].Infer_L = Solve_One_Quadratic_Equation(1.0f,-2.0f*LEG_L1*arm_cos_f32(Phi),LEG_L1*LEG_L1-LEG_L2*LEG_L2);
+    Leg[i].Infer_y = LEG_Base_y + Leg[i].Infer_L * arm_sin_f32(Psi);
+    Leg[i].Infer_z = LEG_Base_z - Leg[i].Infer_L * arm_cos_f32(Psi);
+		Leg_Angle_Control(&Leg[i]);
+	}
+	if(ramp_t == 1.0f){
+		ResetSlope(Ramp);
+		return 1;
+	}
 	else
 		return 0;
 }

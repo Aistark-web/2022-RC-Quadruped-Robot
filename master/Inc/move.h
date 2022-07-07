@@ -11,16 +11,21 @@ typedef enum{
 	Robot_Init_Mode,									//初始化模式
 	Robot_Open_Motor_Mode,						//开启电机模式
 	Robot_Start_Mode,									//启动模式
-	Robot_Move_Mode										//运动模式
+	Robot_Move_Mode,									//运动模式
+	Robot_Shutdown_Mode								//关机模式
 }Robot_Mode_t;
 
 typedef enum{
 	Robot_Stop_Move,									//停止行动
+	Robot_Step_Move,
 	Robot_Straignt_Move,							//直行
 	Robot_Turn_Move,									//拐弯
 	Robot_Circle_Move,								//原地自转
 	Robot_Climb_Move,									//攀爬
 	Robot_Jump_Move,									//跳跃
+	Robot_Double_bridge_Move,					//双木桥行为(包含多个子行为)
+	Robot_Seesaw_Move,								//跷跷板行为(包括多个子行为)
+	Robot_Stair_Move									//阶梯行为(包扣多个子行为)
 }Robot_Move_t;											//运动模式各个运动行为
 
 typedef enum{
@@ -51,15 +56,19 @@ void Robot_Move_State_Reset_Stop(Robot_Handle *Robot);
 	* @brief 运动管理
 	*/
 void Robot_Move_Master(Robot_Handle *Robot);
+
 /**
 	* @brief 直走
 	*/
 void Robot_Move_Straight(Robot_Handle *Robot,Leg_Handle *Leg,Ramp_Typedef *Ramp,Dev_Handle *IMU);
 
 /**
+	* @brief 踏步
+	*/
+void Robot_Move_Step(Robot_Handle *Robot,Leg_Handle *Leg,Ramp_Typedef *Ramp,Dev_Handle *IMU);
+/**
 	* @brief 拐弯
 	*/
-	
 void Robot_Move_Turn(Robot_Handle *Robot,Leg_Handle *Leg,Ramp_Typedef *Ramp,Dev_Handle *IMU);
 
 /**

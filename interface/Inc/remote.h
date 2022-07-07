@@ -60,6 +60,13 @@ typedef struct {
  */
 void Remote_Deal(uint8_t *Remote_Receive_Data,Remote_DataPack_Handle *DataPack);
 
+/**
+	* @brief 校验遥控器数据
+	* @param[in] Remote_Receive_Data 遥控器原始数据
+	* @param[in] check_len 遥控器校验数据长度，数据长度为:接收遥控器数据长度-2
+	* @return 1:校验成功
+						0:校验失败
+	*/
 uint8_t Remote_Vertify(uint8_t *Remote_Receive_Data,uint8_t check_len);
 #ifdef __cpluscplus
 }

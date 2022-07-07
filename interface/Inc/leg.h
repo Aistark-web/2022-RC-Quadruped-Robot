@@ -46,6 +46,10 @@ uint8_t Leg_Move_Init(Leg_Handle *Leg,Ramp_Typedef *ramp);
 uint8_t Leg_Reset_Ramp(Leg_Handle *Leg,Ramp_Typedef *Ramp);
 
 /**
+	* @brief 移动至关机缓冲点
+	*/
+uint8_t Leg_Shutdown_Ramp(Leg_Handle *Leg,Ramp_Typedef *Ramp);
+/**
 	* @brief 运动到固定点
 	*/
 void Leg_Point_RTO(float y,float z,Leg_Handle *Leg);
