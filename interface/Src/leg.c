@@ -1,6 +1,6 @@
 #include "leg.h"
 
-#define LEG_DBUG														1		//是否开启悬挂调试
+#define LEG_DBUG														0  		//是否开启悬挂调试
 
 #define LEG_Base_y                          0.0f//初始化y坐标
 #define LEG_Base_z                          0.0f//初始化z坐标
@@ -9,41 +9,39 @@
 #define LEG_L1                              130.0f//初始化L1
 #define LEG_L2                              260.0f//初始化L2
 
-   
-
 #define DEFAULT_theta1															90.0f/180.0f*PI//自启动后的theta1   60.0f							//单位：弧度
 #define DEFAULT_theta2															90.0f/180.0f*PI//自启动后的theta2	  60.0f							//以下均为弧度
 
 #if LEG_DBUG
 /* 架着调试时 */
-#define FRONT_LEFT_LEG_initial_theta1               (0.0f/180.0f*PI)//前左腿未自启动前初始化theta1  85.59
-#define FRONT_LEFT_LEG_initial_theta2               (0.0f/180.0f*PI)//前左腿未自启动前初始化theta2 201.06
-#define FRONT_RIGHT_LEG_initial_theta1              (0.0f/180.0f*PI)//前右腿未自启动前初始化theta1  85.59
-#define FRONT_RIGHT_LEG_initial_theta2              (0.0f/180.0f*PI)//前右腿未自启动前初始化theta2 201.06
-#define BACK_LEFT_LEG_initial_theta1                (0.0f/180.0f*PI)//后左腿未自启动前初始化theta1  68.12
-#define BACK_LEFT_LEG_initial_theta2                (0.0f/180.0f*PI)//后左腿未自启动前初始化theta2 218.87
-#define BACK_RIGHT_LEG_initial_theta1               (0.0f/180.0f*PI)//后右腿未自启动前初始化theta1  68.12
-#define BACK_RIGHT_LEG_initial_theta2               (0.0f/180.0f*PI)//后右腿未自启动前初始化theta2 218.87
-#define FRONT_LEFT_LEG_shutdown_theta1							(5.0f/180.0f*PI)//前左腿关机角度
-#define FRONT_LEFT_LEG_shutdown_theta2							(5.0f/180.0f*PI)//
-#define FRONT_RIGHT_LEG_shutdown_theta1							(5.0f/180.0f*PI)
-#define FRONT_RIGHT_LEG_shutdown_theta2							(5.0f/180.0f*PI)
-#define BACK_LEFT_LEG_shutdown_theta1								(5.0f/180.0f*PI)
-#define BACK_LEFT_LEG_shutdown_theta2								(5.0f/180.0f*PI)
-#define BACK_RIGHT_LEG_shutdown_theta1							(5.0f/180.0f*PI)
-#define BACK_RIGHT_LEG_shutdown_theta2							(5.0f/180.0f*PI)
+#define FRONT_LEFT_LEG_initial_theta1               (9.025f/180.0f*PI)//前左腿未自启动前初始化theta1  0.0
+#define FRONT_LEFT_LEG_initial_theta2               (9.025f/180.0f*PI)//前左腿未自启动前初始化theta2  0.0
+#define FRONT_RIGHT_LEG_initial_theta1              (9.025f/180.0f*PI)//前右腿未自启动前初始化theta1  0.0
+#define FRONT_RIGHT_LEG_initial_theta2              (9.025f/180.0f*PI)//前右腿未自启动前初始化theta2  0.0
+#define BACK_LEFT_LEG_initial_theta1                (9.025f/180.0f*PI)//后左腿未自启动前初始化theta1  0.0
+#define BACK_LEFT_LEG_initial_theta2                (9.025f/180.0f*PI)//后左腿未自启动前初始化theta2  0.0
+#define BACK_RIGHT_LEG_initial_theta1               (9.025f/180.0f*PI)//后右腿未自启动前初始化theta1  0.0
+#define BACK_RIGHT_LEG_initial_theta2               (9.025f/180.0f*PI)//后右腿未自启动前初始化theta2  0.0
+#define FRONT_LEFT_LEG_shutdown_theta1							(15.0f/180.0f*PI) //前左腿关机角度
+#define FRONT_LEFT_LEG_shutdown_theta2							(15.0f/180.0f*PI) 
+#define FRONT_RIGHT_LEG_shutdown_theta1							(15.0f/180.0f*PI)	
+#define FRONT_RIGHT_LEG_shutdown_theta2							(15.0f/180.0f*PI)	
+#define BACK_LEFT_LEG_shutdown_theta1								(15.0f/180.0f*PI)	
+#define BACK_LEFT_LEG_shutdown_theta2								(15.0f/180.0f*PI)	
+#define BACK_RIGHT_LEG_shutdown_theta1							(15.0f/180.0f*PI)	
+#define BACK_RIGHT_LEG_shutdown_theta2							(15.0f/180.0f*PI)	
 
 #else
 
 /* 下地调试时 */
-#define FRONT_LEFT_LEG_initial_theta1               (85.59f/180.0f*PI)	//前左腿未自启动前初始化theta1  85.59
-#define FRONT_LEFT_LEG_initial_theta2               (201.06f/180.0f*PI)	//前左腿未自启动前初始化theta2 201.06
-#define FRONT_RIGHT_LEG_initial_theta1              (85.59f/180.0f*PI)	//前右腿未自启动前初始化theta1  85.59
-#define FRONT_RIGHT_LEG_initial_theta2              (201.06f/180.0f*PI)	//前右腿未自启动前初始化theta2 201.06
-#define BACK_LEFT_LEG_initial_theta1                (68.12f/180.0f*PI)	//后左腿未自启动前初始化theta1  68.12
-#define BACK_LEFT_LEG_initial_theta2                (218.87f/180.0f*PI)	//后左腿未自启动前初始化theta2 218.87
-#define BACK_RIGHT_LEG_initial_theta1               (68.12f/180.0f*PI)	//后右腿未自启动前初始化theta1  68.12
-#define BACK_RIGHT_LEG_initial_theta2               (218.87f/180.0f*PI)	//后右腿未自启动前初始化theta2 218.87
+#define FRONT_LEFT_LEG_initial_theta1               (81.59f/180.0f*PI)	//前左腿未自启动前初始化theta1  85.59
+#define FRONT_LEFT_LEG_initial_theta2               (205.06f/180.0f*PI)	//前左腿未自启动前初始化theta2 201.06
+#define FRONT_RIGHT_LEG_initial_theta1              (81.59f/180.0f*PI)	//前右腿未自启动前初始化theta1  85.59
+#define FRONT_RIGHT_LEG_initial_theta2              (205.06f/180.0f*PI)	//前右腿未自启动前初始化theta2 201.06
+#define BACK_LEFT_LEG_initial_theta1                (57.12f/180.0f*PI)	//后左腿未自启动前初始化theta1  68.12    消除误差		57.12f
+#define BACK_LEFT_LEG_initial_theta2                (229.87f/180.0f*PI)	//后左腿未自启动前初始化theta2 218.873							229.87f
+#define BACK_RIGHT_LEG_initial_theta1               (57.12f/180.0f*PI)	//后右腿未自启动前初始化theta1  68.12							57.12f
+#define BACK_RIGHT_LEG_initial_theta2               (229.87f/180.0f*PI)	//后右腿未自启动前初始化theta2 218.87							229.87f
 #define FRONT_LEFT_LEG_shutdown_theta1							(80.0f/180.0f*PI)		//前左腿关机theta1
 #define FRONT_LEFT_LEG_shutdown_theta2							(195.0f/180.0f*PI)	//前左腿关机theta2
 #define FRONT_RIGHT_LEG_shutdown_theta1							(80.0f/180.0f*PI)		//前右腿关机theta1
@@ -303,3 +301,25 @@ void Leg_New_Walk(float s,float h,Leg_Handle *Leg,Ramp_Typedef *Ramp)
 	
 }
 
+
+//void Leg_New_Walk_Z(float s,float h,float z,Leg_Handle *Leg,Ramp_Typedef *Ramp){
+//	static float initial_y[4];
+//	static float initial_z[4];
+//	static float Psi,Phi;
+//	static float ramp_t;
+//	if(!Ramp->flag){
+//		initial_y[Leg->Leg_ID-1] = Leg->Infer_y;
+//		initial_z[Leg->Leg_ID-1] = Leg->Infer_z;
+//	}
+//	ramp_t = Slope(Ramp);
+//	if(ramp_t < 0.5f){
+//		#if defined(ARM_MATH_CM4)
+//			
+//		#else
+//		
+//		#endif
+//	}
+//	else{
+//		
+//	}
+//}

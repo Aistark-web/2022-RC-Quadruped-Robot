@@ -20,17 +20,47 @@ Leg_Handle Leg[4];													//ÍÈ²¿
 PID MOTOR_PID[8];														//PIDÊý¾Ý
 PID PID_P[8];																//×é³É´Ëµç»úP²¿·Ö
 PID PID_ID[8];															//×é³É´Ëµç»úI¡¢D²¿·Ö
-Ramp_Typedef Init_Ramp;											//³õÊ¼»¯Ramp
-Ramp_Typedef Shutdown_Ramp;									//¹Ø»úRamp
+
+Ramp_Typedef Init_Ramp;													//³õÊ¼»¯Ramp
+Ramp_Typedef Shutdown_Ramp;											//¹Ø»úRamp
 Ramp_Typedef Step_Ramp[4];											//Ô­µØÌ¤²½Ramp
-Ramp_Typedef Straight_Ramp[4];							//Ö±×ßRamp
-Ramp_Typedef Turn_Ramp[4];									//¹ÕÍäRamp
-Ramp_Typedef Circle_Ramp[4];								//Ô­µØ×ªRamp
-Ramp_Typedef Jump_ready_Ramp;								//ÌøÔ¾×¼±¸Ramp
-Ramp_Typedef Jump_up_Ramp;									//ÌøÔ¾ÆðÌøRamp
-Ramp_Typedef Jump_up_back_Ramp;							//ÌøÔ¾·µ»ØRamp
-Ramp_Typedef Jump_down_buffer_Ramp[4];			//ÌøÔ¾»º³åRamp
-Ramp_Typedef Jump_back_buffer_Ramp[4];			//ÌøÔ¾ÂäÏÂRamp
+Ramp_Typedef Straight_Ramp[4];									//Ö±×ßRamp
+Ramp_Typedef Turn_Ramp[4];											//¹ÕÍäRamp
+Ramp_Typedef Circle_Ramp[4];										//Ô­µØ×ªRamp
+Ramp_Typedef Reset_Ramp;												//¸´Î»Ramp
+
+Ramp_Typedef Jump_ready_Ramp[4];								//ÌøÔ¾×¼±¸Ramp
+Ramp_Typedef Jump_ready_buffer_Ramp;						//ÌøÔ¾×¼±¸»º³åRamp
+Ramp_Typedef Jump_up_Ramp[4];										//ÌøÔ¾ÆðÌøRamp
+Ramp_Typedef Jump_up_buffer_Ramp;								//ÌøÔ¾ÆðÌø»º³åRamp
+Ramp_Typedef Jump_up_back_Ramp[4];							//ÌøÔ¾·µ»ØRamp
+Ramp_Typedef Jump_up_back_buffer_Ramp;					//ÌøÔ¾·µ»Ø»º³åRamp
+Ramp_Typedef Jump_down_buffer_Ramp[4];					//ÌøÔ¾»º³åRamp
+Ramp_Typedef Jump_back_buffer_Ramp[4];					//ÌøÔ¾ÂäÏÂRamp
+
+Ramp_Typedef Double_Bridge_Up_Ramp[4];						//Ë«Ä¾ÇÅÌá½ÅRamp
+Ramp_Typedef Double_Bridge_Stand_Up_Down_Ramp[4];	//Ë«Ä¾ÇÅÉÏÏÂÆðÉíRamp
+Ramp_Typedef Double_Bridge_Stand_Up_Down_Buffer_Ramp;			//Ë«Ä¾ÇÅÉÏÏÂ»º³åRamp
+Ramp_Typedef Double_Bridge_Front_Rise_Ramp[4];		//Ë«Ä¾ÇÅ´îÇ°½ÅRamp
+Ramp_Typedef Double_Bridge_Back_Rise_Ramp[4];			//Ë«Ä¾ÇÅºó½ÅÌ§ÉýRam
+Ramp_Typedef Double_Bridge_Rise_Buffer_Ramp;			//Ë«Ä¾ÇÅÌ§½Å»º³åRamp
+Ramp_Typedef Double_Bridge_Reset_Ramp[4];					//Ë«Ä¾ÇÅÍê³ÉÒ»¸ö¶¯×÷ºóyÖá¹éÎ» Ramp
+Ramp_Typedef Double_Bridge_Front_Down_Ramp[4];		//Ë«Ä¾ÇÅÂäÇ°½ÅRamp
+Ramp_Typedef Double_Bridge_Back_Down_Ramp[4];			//Ë«Ä¾ÇÅÂäºó½ÅRamp
+Ramp_Typedef Double_Bridge_Down_Buffer_Ramp;			//Ë«Ä¾ÇÅÂä½Å»º³åRamp
+Ramp_Typedef Double_Bridge_Down_Ramp[4];					//Ë«Ä¾ÇÅÂä½ÅRamp
+Ramp_Typedef Double_Bridge_Straight_Ramp[4];			//Ë«Ä¾ÇÅÖ±ÐÐRamp
+Ramp_Typedef Double_Bridge_Turn_Ramp[4];					//Ë«Ä¾ÇÅ¹ÕÍäRamp
+Ramp_Typedef Double_Bridge_Circle_Ramp[4];				//Ë«Ä¾ÇÅÔ­µØ×ÔÐýRamp
+
+Ramp_Typedef Seesaw_Down_Sqat_Ramp[4];							//õÎõÎ°å¶×ÏÂRamp
+Ramp_Typedef Seesaw_Down_Sqat_Back_Ramp[4];					//õÎõÎ°å¶×ÏÂ·µ»ØRamp
+Ramp_Typedef Seesaw_Climb_Up_Posture_Ramp[4];				//õÎõÎ°åÉÏÆÂ×ËÌ¬Ramp
+Ramp_Typedef Seesaw_Climb_Down_Posture_Ramp[4];			//õÎõÎ°åÏÂÆÂ×ËÌ¬Ramp
+Ramp_Typedef Seesaw_Straight_Ramp[4];								//õÎõÎ°åÖ±ÐÐRamp
+Ramp_Typedef Seesaw_Turn_Ramp[4];										//õÎõÎ°å×ªÍäRamp
+Ramp_Typedef Seesaw_Circle_Ramp[4];									//õÎõÎ°åÔ­µØ×Ô×ªRamp
+
 
 uint8_t Remote_Data[Remote_Len*2];					//Ò£¿ØÆ÷Êý¾ÝË«±¶»º³å
 uint8_t IMU_Data[IMU_Len*2];								//IMUÊý¾Ý³¤¶È
@@ -97,11 +127,43 @@ void Robot_init()
 		Straight_Ramp[i].RampTime = 500;
 		Turn_Ramp[i].RampTime = 500;
 		Circle_Ramp[i].RampTime = 400;
-		Jump_ready_Ramp.RampTime = 500;
-		Jump_up_Ramp.RampTime = 500;
-		Jump_up_back_Ramp.RampTime = 500;
-		Jump_down_buffer_Ramp[i].RampTime = 2000;
+		Reset_Ramp.RampTime = 200;
+		
+		Jump_ready_Ramp[i].RampTime = 125;
+		Jump_ready_buffer_Ramp.RampTime = 250;
+		Jump_up_Ramp[i].RampTime = 2000;
+		Jump_up_buffer_Ramp.RampTime = 200;						//250
+		Jump_up_back_Ramp[i].RampTime = 125;
+		Jump_up_back_buffer_Ramp.RampTime = 200;			//250
+		Jump_down_buffer_Ramp[i].RampTime = 1500;
 		Jump_back_buffer_Ramp[i].RampTime = 2000;
+		
+		/* Ë«Ä¾ÇÅ */
+		Double_Bridge_Stand_Up_Down_Ramp[i].RampTime = 500;	//Ë«Ä¾ÇÅÆðÉí½µÏÂRamp
+		Double_Bridge_Up_Ramp[i].RampTime 				= 1000;		//Ë«Ä¾ÇÅÌá½ÅRamp
+		Double_Bridge_Front_Rise_Ramp[i].RampTime = 500;		//Ë«Ä¾ÇÅ´îÇ°½ÅRamp
+		Double_Bridge_Back_Rise_Ramp[i].RampTime 	= 500;		//Ë«Ä¾ÇÅºó½ÅÌ§ÉýRamp
+		Double_Bridge_Rise_Buffer_Ramp.RampTime 	= 1000;		//Ë«Ä¾ÇÅÌ§½Å»º³åRamp
+		
+		Double_Bridge_Down_Ramp[i].RampTime				= 1000;
+		Double_Bridge_Stand_Up_Down_Buffer_Ramp.RampTime = 1000;
+		Double_Bridge_Front_Down_Ramp[i].RampTime = 500;		//Ë«Ä¾ÇÅÂäÇ°½ÅRamp
+		Double_Bridge_Back_Down_Ramp[i].RampTime	= 500;		//Ë«Ä¾ÇÅÂäºó½ÅRamp
+		Double_Bridge_Down_Buffer_Ramp.RampTime		= 1000;		//Ë«Ä¾ÇÅÂä½Å»º³åRamp
+		
+		Double_Bridge_Reset_Ramp[i].RampTime 			= 2000;		//Ë«Ä¾ÇÅÍê³ÉÒ»¸ö¶¯×÷ºóyÖá¹éÎ» Ramp
+		Double_Bridge_Straight_Ramp[i].RampTime		=	500;		//Ë«Ä¾ÇÅÖ±ÐÐRamp
+		Double_Bridge_Turn_Ramp[i].RampTime 			= 500;		//Ë«Ä¾ÇÅ¹ÕÍäRamp
+		Double_Bridge_Circle_Ramp[i].RampTime			=	400;		//Ë«Ä¾ÇÅÔ­µØ×ÔÐýRamp
+		
+		/* õÎõÎ°å */
+		Seesaw_Down_Sqat_Ramp[i].RampTime						=	300;	//õÎõÎ°å¶×ÏÂRamp
+		Seesaw_Down_Sqat_Back_Ramp[i].RampTime			=	300;	//õÎõÎ°å¶×ÏÂ·µ»ØRamp
+		Seesaw_Climb_Up_Posture_Ramp[i].RampTime		=	200;	//õÎõÎ°åÉÏÆÂ×ËÌ¬Ramp
+		Seesaw_Climb_Down_Posture_Ramp[i].RampTime	=	200; 	//õÎõÎ°åÏÂÆÂ×ËÌ¬Ramp
+		Seesaw_Straight_Ramp[i].RampTime						=	500;	//õÎõÎ°åÖ±ÐÐRamp
+		Seesaw_Turn_Ramp[i].RampTime								=	500;	//õÎõÎ°å¹ÕÍäRamp
+		Seesaw_Circle_Ramp[i].RampTime							=	400;	//õÎõÎ°åÔ­µØ×Ô×ªRamp
 	}
 	
 	/* °ó¶¨ÍÈ²¿µç»ú */
@@ -147,61 +209,62 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 		
 		static uint32_t mailbox;
 		if(Robot.Mode > Robot_Open_Motor_Mode){
-			#if 1
-			/* PID¿ØÖÆ */
-//			EP_uint16_t[Robot.can_list*2] = float_to_uint(HT_03_MOTOR[Robot.can_list*2].Expect.E_P,P_MIN,P_MAX,16);
-//			EP_float[Robot.can_list*2] = uint_to_float(EP_uint16_t[Robot.can_list*2],P_MIN,P_MAX,16);
-//			EP_uint16_t[Robot.can_list*2+1] = float_to_uint(HT_03_MOTOR[Robot.can_list*2+1].Expect.E_P,P_MIN,P_MAX,16);
-//			EP_float[Robot.can_list*2+1] = uint_to_float(EP_uint16_t[Robot.can_list*2+1],P_MIN,P_MAX,16);
-//			EP_uint16_t[Robot.can_list*2+4] = float_to_uint(HT_03_MOTOR[Robot.can_list*2+4].Expect.E_P,P_MIN,P_MAX,16);
-//			EP_float[Robot.can_list*2+4] = uint_to_float(EP_uint16_t[Robot.can_list*2+4],P_MIN,P_MAX,16);
-//			EP_uint16_t[Robot.can_list*2+5] = float_to_uint(HT_03_MOTOR[Robot.can_list*2+5].Expect.E_P,P_MIN,P_MAX,16);
-//			EP_float[Robot.can_list*2+5] = uint_to_float(EP_uint16_t[Robot.can_list*2+5],P_MIN,P_MAX,16);
-//			PID_Control(HT_03_MOTOR[Robot.can_list*2].Current.C_P,EP_float[Robot.can_list*2],&MOTOR_PID[Robot.can_list*2]);
-//			PID_Control(HT_03_MOTOR[Robot.can_list*2+1].Current.C_P,EP_float[Robot.can_list*2+1],&MOTOR_PID[Robot.can_list*2+1]);
-//			PID_Control(HT_03_MOTOR[Robot.can_list*2+4].Current.C_P,EP_float[Robot.can_list*2+4],&MOTOR_PID[Robot.can_list*2+4]);
-//			PID_Control(HT_03_MOTOR[Robot.can_list*2+5].Current.C_P,EP_float[Robot.can_list*2+5],&MOTOR_PID[Robot.can_list*2+5]);
-			
 			PID_Control(HT_03_MOTOR[Robot.can_list*2].Current.C_P,HT_03_MOTOR[Robot.can_list*2].Expect.E_P,&MOTOR_PID[Robot.can_list*2]);
 			PID_Control(HT_03_MOTOR[Robot.can_list*2+1].Current.C_P,HT_03_MOTOR[Robot.can_list*2+1].Expect.E_P,&MOTOR_PID[Robot.can_list*2+1]);
-			PID_Control(HT_03_MOTOR[Robot.can_list*2+4].Current.C_P,HT_03_MOTOR[Robot.can_list*2+4].Expect.E_P,&MOTOR_PID[Robot.can_list*2+4]);
-			PID_Control(HT_03_MOTOR[Robot.can_list*2+5].Current.C_P,HT_03_MOTOR[Robot.can_list*2+5].Expect.E_P,&MOTOR_PID[Robot.can_list*2+5]);
-			HT_03_MOTOR[Robot.can_list*2].Expect.E_T 		= MOTOR_PID[Robot.can_list*2].pid_out;
-			HT_03_MOTOR[Robot.can_list*2+1].Expect.E_T	= MOTOR_PID[Robot.can_list*2+1].pid_out;
-			HT_03_MOTOR[Robot.can_list*2+4].Expect.E_T	= MOTOR_PID[Robot.can_list*2+4].pid_out;
-			HT_03_MOTOR[Robot.can_list*2+5].Expect.E_T	= MOTOR_PID[Robot.can_list*2+5].pid_out;
-			
-			/* ·â°ü */
-			HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2],&HT_03_MOTOR[Robot.can_list*2]);
-			HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2+1],&HT_03_MOTOR[Robot.can_list*2+1]);
-			HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2+4],&HT_03_MOTOR[Robot.can_list*2+4]);
-			HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2+5],&HT_03_MOTOR[Robot.can_list*2+5]);
-			#else
-			/* PID¿ØÖÆ */
-			PID_Control(HT_03_MOTOR[Robot.can_list*2].Current.C_P,HT_03_MOTOR[Robot.can_list*2].Expect.E_P,&PID_P[Robot.can_list*2]);
-			PID_Control(HT_03_MOTOR[Robot.can_list*2+1].Current.C_P,HT_03_MOTOR[Robot.can_list*2+1].Expect.E_P,&PID_P[Robot.can_list*2+1]);
-			PID_Control(HT_03_MOTOR[Robot.can_list*2+4].Current.C_P,HT_03_MOTOR[Robot.can_list*2+4].Expect.E_P,&PID_P[Robot.can_list*2+4]);
-			PID_Control(HT_03_MOTOR[Robot.can_list*2+5].Current.C_P,HT_03_MOTOR[Robot.can_list*2+5].Expect.E_P,&PID_P[Robot.can_list*2+5]);
-			PID_Control(HT_03_MOTOR[Robot.can_list*2].Current.C_P,HT_03_MOTOR[Robot.can_list*2].Expect.E_P,&PID_ID[Robot.can_list*2]);
-			PID_Control(HT_03_MOTOR[Robot.can_list*2+1].Current.C_P,HT_03_MOTOR[Robot.can_list*2+1].Expect.E_P,&PID_ID[Robot.can_list*2+1]);
-			PID_Control(HT_03_MOTOR[Robot.can_list*2+4].Current.C_P,HT_03_MOTOR[Robot.can_list*2+4].Expect.E_P,&PID_ID[Robot.can_list*2+4]);
-			PID_Control(HT_03_MOTOR[Robot.can_list*2+5].Current.C_P,HT_03_MOTOR[Robot.can_list*2+5].Expect.E_P,&PID_ID[Robot.can_list*2+5]);
-			HT_03_MOTOR[Robot.can_list*2].Expect.E_T		= PID_P[Robot.can_list*2].pid_out + PID_ID[Robot.can_list*2].pid_out;
-			HT_03_MOTOR[Robot.can_list*2+1].Expect.E_T	= PID_P[Robot.can_list*2+1].pid_out + PID_ID[Robot.can_list*2+1].pid_out;
-			HT_03_MOTOR[Robot.can_list*2+4].Expect.E_T 	= PID_P[Robot.can_list*2+4].pid_out + PID_ID[Robot.can_list*2+4].pid_out;
-			HT_03_MOTOR[Robot.can_list*2+5].Expect.E_T	=	PID_P[Robot.can_list*2+5].pid_out + PID_ID[Robot.can_list*2+5].pid_out;
-			
-			/* ·â°ü */
-			HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2],&HT_03_MOTOR[Robot.can_list*2]);
-			HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2+1],&HT_03_MOTOR[Robot.can_list*2+1]);
-			HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2+4],&HT_03_MOTOR[Robot.can_list*2+4]);
-			HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2+5],&HT_03_MOTOR[Robot.can_list*2+5]);
-			#endif
-			/* ·¢ËÍÊý¾Ý */
-			HAL_CAN_AddTxMessage(&hcan1,&CAN_TX[Robot.can_list*2],CAN_TX_Data[Robot.can_list*2],&mailbox);
-			HAL_CAN_AddTxMessage(&hcan2,&CAN_TX[Robot.can_list*2+4],CAN_TX_Data[Robot.can_list*2+4],&mailbox);
-			HAL_CAN_AddTxMessage(&hcan1,&CAN_TX[Robot.can_list*2+1],CAN_TX_Data[Robot.can_list*2+1],&mailbox);
-			HAL_CAN_AddTxMessage(&hcan2,&CAN_TX[Robot.can_list*2+5],CAN_TX_Data[Robot.can_list*2+5],&mailbox);
+			PID_Control(HT_03_MOTOR[6-(Robot.can_list*2)].Current.C_P,HT_03_MOTOR[6-(Robot.can_list*2)].Expect.E_P,&MOTOR_PID[6-(Robot.can_list*2)]);
+			PID_Control(HT_03_MOTOR[7-(Robot.can_list*2)].Current.C_P,HT_03_MOTOR[7-(Robot.can_list*2)].Expect.E_P,&MOTOR_PID[7-(Robot.can_list*2)]);
+			if(!Robot.Torque_Control){							//²»¿ªÆôÁ¦¿ØÄ£Ê½
+				#if 1
+	//			PID_Control(HT_03_MOTOR[Robot.can_list*2].Current.C_P,HT_03_MOTOR[Robot.can_list*2].Expect.E_P,&MOTOR_PID[Robot.can_list*2]);
+	//			PID_Control(HT_03_MOTOR[Robot.can_list*2+1].Current.C_P,HT_03_MOTOR[Robot.can_list*2+1].Expect.E_P,&MOTOR_PID[Robot.can_list*2+1]);
+	//			PID_Control(HT_03_MOTOR[Robot.can_list*2+4].Current.C_P,HT_03_MOTOR[Robot.can_list*2+4].Expect.E_P,&MOTOR_PID[Robot.can_list*2+4]);
+	//			PID_Control(HT_03_MOTOR[Robot.can_list*2+5].Current.C_P,HT_03_MOTOR[Robot.can_list*2+5].Expect.E_P,&MOTOR_PID[Robot.can_list*2+5]);
+	//			HT_03_MOTOR[Robot.can_list*2].Expect.E_T 		= MOTOR_PID[Robot.can_list*2].pid_out;
+	//			HT_03_MOTOR[Robot.can_list*2+1].Expect.E_T	= MOTOR_PID[Robot.can_list*2+1].pid_out;
+	//			HT_03_MOTOR[Robot.can_list*2+4].Expect.E_T	= MOTOR_PID[Robot.can_list*2+4].pid_out;
+	//			HT_03_MOTOR[Robot.can_list*2+5].Expect.E_T	= MOTOR_PID[Robot.can_list*2+5].pid_out;
+	//			
+	//			/* ·â°ü */
+	//			HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2],&HT_03_MOTOR[Robot.can_list*2]);
+	//			HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2+1],&HT_03_MOTOR[Robot.can_list*2+1]);
+	//			HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2+4],&HT_03_MOTOR[Robot.can_list*2+4]);
+	//			HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2+5],&HT_03_MOTOR[Robot.can_list*2+5]);
+	//			
+	//			/* ·¢ËÍÊý¾Ý */
+	//			HAL_CAN_AddTxMessage(&hcan1,&CAN_TX[Robot.can_list*2],CAN_TX_Data[Robot.can_list*2],&mailbox);
+	//			HAL_CAN_AddTxMessage(&hcan2,&CAN_TX[Robot.can_list*2+4],CAN_TX_Data[Robot.can_list*2+4],&mailbox);
+	//			HAL_CAN_AddTxMessage(&hcan1,&CAN_TX[Robot.can_list*2+1],CAN_TX_Data[Robot.can_list*2+1],&mailbox);
+	//			HAL_CAN_AddTxMessage(&hcan2,&CAN_TX[Robot.can_list*2+5],CAN_TX_Data[Robot.can_list*2+5],&mailbox);
+				
+				HT_03_MOTOR[Robot.can_list*2].Expect.E_T	 		= MOTOR_PID[Robot.can_list*2].pid_out;
+				HT_03_MOTOR[Robot.can_list*2+1].Expect.E_T 		= MOTOR_PID[Robot.can_list*2+1].pid_out;
+				HT_03_MOTOR[6-(Robot.can_list*2)].Expect.E_T	= MOTOR_PID[6-(Robot.can_list*2)].pid_out;
+				HT_03_MOTOR[7-(Robot.can_list*2)].Expect.E_T	= MOTOR_PID[7-(Robot.can_list*2)].pid_out;
+				
+				HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2],&HT_03_MOTOR[Robot.can_list*2]);
+				HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2+1],&HT_03_MOTOR[Robot.can_list*2+1]);
+				HT_03_Motor_Data_packet(CAN_TX_Data[6-(Robot.can_list*2)],&HT_03_MOTOR[6-(Robot.can_list*2)]);
+				HT_03_Motor_Data_packet(CAN_TX_Data[7-(Robot.can_list*2)],&HT_03_MOTOR[7-(Robot.can_list*2)]);
+
+				HAL_CAN_AddTxMessage(&hcan1,&CAN_TX[Robot.can_list*2],CAN_TX_Data[Robot.can_list*2],&mailbox);
+				HAL_CAN_AddTxMessage(&hcan2,&CAN_TX[6-(Robot.can_list*2)],CAN_TX_Data[6-(Robot.can_list*2)],&mailbox);
+				HAL_CAN_AddTxMessage(&hcan1,&CAN_TX[Robot.can_list*2+1],CAN_TX_Data[Robot.can_list*2+1],&mailbox);
+				HAL_CAN_AddTxMessage(&hcan2,&CAN_TX[7-(Robot.can_list*2)],CAN_TX_Data[7-(Robot.can_list*2)],&mailbox);
+				#endif
+	
+			}
+			else{
+				//µç»úÊý¾Ý°ü×°
+				HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2],&HT_03_MOTOR[Robot.can_list*2]);
+				HT_03_Motor_Data_packet(CAN_TX_Data[Robot.can_list*2+1],&HT_03_MOTOR[Robot.can_list*2+1]);
+				HT_03_Motor_Data_packet(CAN_TX_Data[6-(Robot.can_list*2)],&HT_03_MOTOR[6-(Robot.can_list*2)]);
+				HT_03_Motor_Data_packet(CAN_TX_Data[7-(Robot.can_list*2)],&HT_03_MOTOR[7-(Robot.can_list*2)]);
+
+				HAL_CAN_AddTxMessage(&hcan1,&CAN_TX[Robot.can_list*2],CAN_TX_Data[Robot.can_list*2],&mailbox);
+				HAL_CAN_AddTxMessage(&hcan2,&CAN_TX[6-(Robot.can_list*2)],CAN_TX_Data[6-(Robot.can_list*2)],&mailbox);
+				HAL_CAN_AddTxMessage(&hcan1,&CAN_TX[Robot.can_list*2+1],CAN_TX_Data[Robot.can_list*2+1],&mailbox);
+				HAL_CAN_AddTxMessage(&hcan2,&CAN_TX[7-(Robot.can_list*2)],CAN_TX_Data[7-(Robot.can_list*2)],&mailbox);
+			}
 			Robot.can_list++;										//¸üÐÂ·¢ËÍÁÐ±í
 			if(Robot.can_list == 2){						//Ò»´ÎÑ­»·½áÊø
 				Robot.can_list = 0;
