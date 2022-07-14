@@ -49,14 +49,14 @@ typedef enum{
 	Double_Bridge_None_State,
 	Double_Bridge_Front_Rise_State,
 	Double_Bridge_Back_Rise_State,
-	Double_Bridge_Front_Down_State,		//Back_Down 即已下降完毕，归位完成，无需再设单独State
+	Double_Bridge_Front_Down_State,		
 	Double_Bridge_Back_Down_State
 }Double_Bridge_State_t;
 
 typedef enum{
 	Seesaw_None_Event,
 	Seesaw_Sqat_Event,
-	Seesaw_Sqat_Back_Event,
+	Seesaw_Stand_Event,
 	Seesaw_Climb_Up_Event,
 	Seesaw_Climb_Down_Event,
 	Seesaw_Straight_Event,
@@ -65,7 +65,7 @@ typedef enum{
 }Seesaw_Event_t;
 
 typedef enum{
-	Seesaw_None_State,
+	Seesaw_Climb_None_State,
 	Seesaw_Climb_Up_State,						//上坡状态
 	Seesaw_Climb_Down_State						//下坡状态
 }Seesaw_Climb_State_t;

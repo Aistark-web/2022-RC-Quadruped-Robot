@@ -45,13 +45,13 @@ void WTGAHRS1_Data_deal(uint8_t *head,Dev_Handle *Dev)
 		/* Å·À­½Ç */
 		case 0x53:
 		{
-			int16_t mid_r			=	*(head + 2) | (*(head + 3)<<8);
-			int16_t mid_p			= *(head + 4) | (*(head + 5)<<8);
+			int16_t mid_p			=	*(head + 2) | (*(head + 3)<<8);
+			int16_t mid_r			= *(head + 4) | (*(head + 5)<<8);
 			int16_t mid_y			=	*(head + 6) | (*(head + 7)<<8);
 			int16_t mid_T			=	*(head + 8) | (*(head + 9)<<8);
-			Dev->Angle.Roll		=	mid_r / 32768.0f * 180.0f;
-			Dev->Angle.Pitch	=	mid_p / 32768.0f * 180.0f;
-			Dev->Angle.Yaw		=	mid_y / 32768.0f * 180.0f;
+			Dev->Angle.Pitch	=	mid_p / 32768.0f * 180.0f;		
+			Dev->Angle.Roll		=	mid_r / 32768.0f * 180.0f;		
+			Dev->Angle.Yaw		=	mid_y / 32768.0f * 180.0f;		
 			Dev->T						=	mid_T / 100.0f;
 			break;
 		}

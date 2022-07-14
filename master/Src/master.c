@@ -53,10 +53,12 @@ Ramp_Typedef Double_Bridge_Straight_Ramp[4];			//Ë«Ä¾ÇÅÖ±ÐÐRamp
 Ramp_Typedef Double_Bridge_Turn_Ramp[4];					//Ë«Ä¾ÇÅ¹ÕÍäRamp
 Ramp_Typedef Double_Bridge_Circle_Ramp[4];				//Ë«Ä¾ÇÅÔ­µØ×ÔÐýRamp
 
-Ramp_Typedef Seesaw_Down_Sqat_Ramp[4];							//õÎõÎ°å¶×ÏÂRamp
-Ramp_Typedef Seesaw_Down_Sqat_Back_Ramp[4];					//õÎõÎ°å¶×ÏÂ·µ»ØRamp
+Ramp_Typedef Seesaw_Sqat_Ramp[4];							//õÎõÎ°å¶×ÏÂRamp
+Ramp_Typedef Seesaw_Sqat_Back_Ramp[4];					//õÎõÎ°å¶×ÏÂ·µ»ØRamp
 Ramp_Typedef Seesaw_Climb_Up_Posture_Ramp[4];				//õÎõÎ°åÉÏÆÂ×ËÌ¬Ramp
 Ramp_Typedef Seesaw_Climb_Down_Posture_Ramp[4];			//õÎõÎ°åÏÂÆÂ×ËÌ¬Ramp
+Ramp_Typedef Seesaw_Climb_Buffer_Ramp;							//ÅÊÅÀ»º³åRamp
+Ramp_Typedef Seesaw_Sqat_Buffer_Ramp;								//¶×ÏÂ»º³å
 Ramp_Typedef Seesaw_Straight_Ramp[4];								//õÎõÎ°åÖ±ÐÐRamp
 Ramp_Typedef Seesaw_Turn_Ramp[4];										//õÎõÎ°å×ªÍäRamp
 Ramp_Typedef Seesaw_Circle_Ramp[4];									//õÎõÎ°åÔ­µØ×Ô×ªRamp
@@ -157,13 +159,15 @@ void Robot_init()
 		Double_Bridge_Circle_Ramp[i].RampTime			=	400;		//Ë«Ä¾ÇÅÔ­µØ×ÔÐýRamp
 		
 		/* õÎõÎ°å */
-		Seesaw_Down_Sqat_Ramp[i].RampTime						=	300;	//õÎõÎ°å¶×ÏÂRamp
-		Seesaw_Down_Sqat_Back_Ramp[i].RampTime			=	300;	//õÎõÎ°å¶×ÏÂ·µ»ØRamp
+		Seesaw_Sqat_Ramp[i].RampTime								=	300;	//õÎõÎ°å¶×ÏÂRamp
+		Seesaw_Sqat_Back_Ramp[i].RampTime						=	300;	//õÎõÎ°å¶×ÏÂ·µ»ØRamp
 		Seesaw_Climb_Up_Posture_Ramp[i].RampTime		=	200;	//õÎõÎ°åÉÏÆÂ×ËÌ¬Ramp
 		Seesaw_Climb_Down_Posture_Ramp[i].RampTime	=	200; 	//õÎõÎ°åÏÂÆÂ×ËÌ¬Ramp
 		Seesaw_Straight_Ramp[i].RampTime						=	500;	//õÎõÎ°åÖ±ÐÐRamp
 		Seesaw_Turn_Ramp[i].RampTime								=	500;	//õÎõÎ°å¹ÕÍäRamp
 		Seesaw_Circle_Ramp[i].RampTime							=	400;	//õÎõÎ°åÔ­µØ×Ô×ªRamp
+		Seesaw_Climb_Buffer_Ramp.RampTime						=	500;	//õÎõÎ°åÅÊÅÀ»º³å
+		Seesaw_Sqat_Buffer_Ramp.RampTime						=	500;	//õÎõÎ°å¶×ÏÂ»º³å
 	}
 	
 	/* °ó¶¨ÍÈ²¿µç»ú */
@@ -198,12 +202,13 @@ void Robot_init()
 /* END ³õÊ¼»¯ */
 
 /* BEGIN ÖÐ¶Ï */
-
+uint32_t tim2_count;
 /* ¶¨Ê±Æ÷ÖÐ¶Ï */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	if(htim->Instance == TIM2){
 		Robot_Check(&Robot,&Remote_DataPack);
-		Robot_Move_Master(&Robot);		
+		Robot_Move_Master(&Robot);
+		tim2_count++;
 	}
 	else if(htim->Instance == TIM3){
 		
@@ -273,6 +278,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	}
 }
 
+uint32_t imu_count;
 /* UART IDLE ÖÐ¶Ï */
 void UART_IT(UART_HandleTypeDef *huart){
 	if(__HAL_UART_GET_IT_SOURCE(huart,UART_IT_IDLE)&&__HAL_UART_GET_FLAG(huart,UART_FLAG_IDLE)){
@@ -307,6 +313,7 @@ void UART_IT(UART_HandleTypeDef *huart){
 						continue;
 				}
 			}
+			imu_count++;
 			memset(IMU_Data,0,IMU_Len*2);
 			HAL_UART_Receive_DMA(huart,IMU_Data,IMU_Len*2);
 		}
