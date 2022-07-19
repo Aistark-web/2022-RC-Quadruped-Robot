@@ -46,7 +46,7 @@ typedef enum{
 }Double_Bridge_Event_t;
 
 typedef enum{
-	Double_Bridge_None_State,
+	Double_Bridge_None_State,					
 	Double_Bridge_Front_Rise_State,
 	Double_Bridge_Back_Rise_State,
 	Double_Bridge_Front_Down_State,		
@@ -54,7 +54,7 @@ typedef enum{
 }Double_Bridge_State_t;
 
 typedef enum{
-	Seesaw_None_Event,
+	Seesaw_None_Event,								
 	Seesaw_Sqat_Event,
 	Seesaw_Stand_Event,
 	Seesaw_Climb_Up_Event,
@@ -76,8 +76,30 @@ typedef enum{
 }Seesaw_Sqat_State_t;
 
 typedef enum{
-	Stair_None_Evnet
+	Stair_None_State,									//台阶 无状态
+	Stair_Start_State,								//台阶 准备状态
+	Stair_Front_Rise_State,						//台阶 前脚上爬状态
+	Stair_Back_Rise_State,						//台阶 后脚上爬状态
+	Stair_Front_Down_State,						//台阶 前脚下落状态
+	Stair_Back_Down_State,						//台阶 后脚下落状态
+	Stair_End_State										//台阶 复位状态(腿部归位，结束台阶爬行状态)
+}Stair_State_t;
+
+
+typedef enum{
+	Stair_None_Evnet,
+	Stair_Start_Event,
+	Stair_End_Event,
+	Stair_Front_Rise_Event,
+	Stair_Back_Rise_Event,
+	Stair_Front_Down_Event,
+	Stair_Back_Down_Event,
+	Stair_Climb_Event,
+	Stair_Straight_Event,
+	Stair_Turn_Event,
+	Stair_Circle_Event
 }Stair_Event_t;
+
 
 typedef struct{
 	uint8_t Open_Motor_State;					
@@ -92,7 +114,9 @@ typedef struct{
 	Seesaw_Event_t seesaw_event;									//跷跷板事件
 	Seesaw_Climb_State_t seesaw_climb_state;			//跷跷板攀爬状态
 	Seesaw_Sqat_State_t	seesaw_sqat_state;				//跷跷板蹲下起身状态
-	Stair_Event_t stair_event;										//阶梯事件
+	Stair_Event_t stair_event;										//台阶事件
+	Stair_State_t stair_state;										//台阶状态
+	uint8_t Stair_Climb_State;										//台阶爬升状态
 }Robot_Handle;
 
 

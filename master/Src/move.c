@@ -42,6 +42,24 @@ extern Ramp_Typedef Seesaw_Straight_Ramp[4];							//跷跷板直行Ramp
 extern Ramp_Typedef Seesaw_Turn_Ramp[4];									//跷跷板转弯Ramp
 extern Ramp_Typedef Seesaw_Circle_Ramp[4];								//跷跷板原地自转Ramp
 
+extern Ramp_Typedef Stair_Up_Ramp[4];											//台阶 提脚Ramp
+extern Ramp_Typedef Stair_Start_End_Ramp[4];							//台阶 准备Ramp
+extern Ramp_Typedef Stair_Start_End_Buffer_Ramp;					//台阶 准备缓冲Ramp
+extern Ramp_Typedef Stair_Down_Ramp[4];										//台阶 落地Ramp
+extern Ramp_Typedef Stair_Stand_Up_Down_Ramp[4];					//台阶 上下起身Ramp
+extern Ramp_Typedef Stair_Stand_Up_Down_Buffer_Ramp;			//台阶 上下起身缓冲Ramp
+extern Ramp_Typedef Stair_Front_Rise_Ramp[4];							//台阶 前脚抬起Ramp
+extern Ramp_Typedef Stair_Back_Rise_Ramp[4];							//台阶 后腿抬起Ramp
+extern Ramp_Typedef Stair_Rise_Buffer_Ramp;								//台阶 抬脚Ramp
+extern Ramp_Typedef Stair_Front_Down_Ramp[4];							//台阶 前腿落地Ramp
+extern Ramp_Typedef Stair_Back_Down_Ramp[4];							//台阶 后腿落地Ramp
+extern Ramp_Typedef Stair_Down_Buffer_Ramp;								//台阶 落地缓冲Ramp
+extern Ramp_Typedef Stair_Reset_Ramp[4];									//台阶 归位Ramp
+extern Ramp_Typedef Stair_Reset_Buffer_Ramp;							//台阶 归位缓冲Ramp
+extern Ramp_Typedef Stair_Straight_Ramp[4];								//台阶 直行Ramp
+extern Ramp_Typedef Stair_Turn_Ramp[4];										//台阶 拐弯Ramp
+extern Ramp_Typedef Stair_Circle_Ramp[4];									//台阶 原地自旋Ramp
+
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
 extern CAN_HandleTypeDef hcan1;
@@ -49,10 +67,10 @@ extern CAN_HandleTypeDef hcan2;
 extern Dev_Handle IMU;
 extern Remote_DataPack_Handle Remote_DataPack;			//遥控器数据
 extern Remote_DataPack_Handle Remote_Last_DataPack;	//上一次遥控器数据
-extern Leg_Handle Leg[4];
-extern HT_03_MOTOR_Handle HT_03_Zero_Motor;				//零状态电机
-extern uint8_t CAN_TX_Data[8][8];									//CAN发送数据缓冲
-extern CAN_TxHeaderTypeDef CAN_TX[8];							//CAN发送报文
+extern Leg_Handle Leg[4];														
+extern HT_03_MOTOR_Handle HT_03_Zero_Motor;					//零状态电机
+extern uint8_t CAN_TX_Data[8][8];										//CAN发送数据缓冲
+extern CAN_TxHeaderTypeDef CAN_TX[8];								//CAN发送报文
 uint8_t Motor_Mode_data[8] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFC};						//电机控制模式
 
 /* 模式状态调度 */
@@ -99,25 +117,35 @@ void Robot_Check(Robot_Handle *Robot,Remote_DataPack_Handle *Remote)
 							Robot->Move 	= Robot_Double_bridge_Move;
 							Robot->State	=	Robot_Running_State;
 						}
-						/* 跷跷板 */
-						else if(Remote_DataPack.Key.Right_Switch_Up){
-							Robot->Move 	= Robot_Seesaw_Move;
-							Robot->State	=	Robot_Running_State;
+//						/* 跷跷板 */
+//						else if(Remote_DataPack.Key.Right_Switch_Up){
+//							Robot->Move 	= Robot_Seesaw_Move;
+//							Robot->State	=	Robot_Running_State;
+//						}
+						/* 台阶 */
+						else if(Remote_DataPack.Key.Right_Switch_Down){
+							Robot->Move		= Robot_Stair_Move;
+							Robot->State	= Robot_Running_State;
 						}
 						/* 直行/拐弯 */
-						else if(Remote_DataPack.L_Y_rocker < 500 || Remote_DataPack.L_Y_rocker > 3500){																							
+						else if((Remote_DataPack.L_Y_rocker < 500 || Remote_DataPack.L_Y_rocker > 3500) && 
+										Robot->seesaw_sqat_state == Seesaw_Stand_State &&
+										Robot->stair_state == Stair_None_State){																				
 							if(Remote_DataPack.R_X_rocker > 500 && Remote_DataPack.R_X_rocker < 3500){			//判断为直行动作
 								Robot->Move = Robot_Straignt_Move;
 								Robot->State = Robot_Running_State;
 							}
 							else if(Remote_DataPack.R_X_rocker < 500 || Remote_DataPack.R_X_rocker > 3500){	//判断为拐弯动作
 								Robot->Move = Robot_Turn_Move;
-								Robot->State = Robot_Running_State;																																												
+								Robot->State = Robot_Running_State;																																							
 							}
 							break;
 						}
 						/* 自旋 */
-						else if(Remote_DataPack.L_X_rocker < 500 || Remote_DataPack.L_X_rocker > 3500){
+						else if((Remote_DataPack.L_X_rocker < 500 || Remote_DataPack.L_X_rocker > 3500) &&
+										 Robot->double_bridge_state == Double_Bridge_None_State	&&
+										 Robot->seesaw_sqat_state == Seesaw_Stand_State &&
+										 Robot->stair_state == Stair_None_State){
 							Robot->Move = Robot_Circle_Move;
 							Robot->State = Robot_Running_State;
 							break;
@@ -213,6 +241,8 @@ void Robot_Move_Master(Robot_Handle *Robot)
 						Robot->double_bridge_state = Double_Bridge_None_State;	//双木桥状态归位
 						Robot->seesaw_sqat_state = Seesaw_Stand_State;					//跷跷板蹲下状态归位
 						Robot->seesaw_climb_state = Seesaw_Climb_None_State;		//跷跷板攀爬状态归位
+						Robot->stair_state = Stair_None_State;									//台阶状态归位
+						Robot->Stair_Climb_State = 0;
 					}
 					break;
 				}
@@ -237,7 +267,6 @@ void Robot_Move_Master(Robot_Handle *Robot)
 					break;
 				}
 				case Robot_Climb_Move:{
-					
 					break;
 				}
 				case Robot_Double_bridge_Move:{
@@ -245,10 +274,11 @@ void Robot_Move_Master(Robot_Handle *Robot)
 					break;
 				}
 				case Robot_Seesaw_Move:{
-					Robot_Move_Seesaw(Robot,Leg,&IMU);
+//					Robot_Move_Seesaw(Robot,Leg,&IMU);
 					break;
 				}
 				case Robot_Stair_Move:{
+					Robot_Move_Stair(Robot,Leg,&IMU);
 					break;
 				}
 			}
@@ -266,63 +296,27 @@ void Robot_Move_Master(Robot_Handle *Robot)
 	}
 }
 
+uint32_t straight_count1;
+uint32_t straight_count2;
+uint32_t straight_count3;
+uint32_t straight_count4;
 /* 直走 */
 void Robot_Move_Straight(Robot_Handle *Robot,Leg_Handle *Leg,Ramp_Typedef *Ramp,Dev_Handle *IMU){
 	static uint8_t Part_State;																				//状态
 	static uint16_t initial_L_Y;																			//数值
 	static uint8_t start_flag;																				//开始标志
 	static float source_y = 40.0f;																		//y方向距离								//60.0f
-	static float source_walk_z = 30.0f;																//z方向距离								//50.0f 80.0f						
-	static float line_y;																							//抬脚/后移 y方向距离
+	static float source_walk_z = 40.0f;																//z方向距离								//50.0f 80.0f						
+	static float line_y;																							//抬脚/后移 	y方向距离
 	static float line_z;																							//后移		  y方向距离
 	static float walk_z;																							//抬脚高度		z方向抬腿最高点		
-	if(!start_flag){																									
-		start_flag = 1;																									
+	if(!start_flag){
+		start_flag = 1;
 		initial_L_Y = Remote_DataPack.L_Y_rocker;
 		line_y = initial_L_Y < 500 ? source_y : -source_y;
 
 		walk_z = source_walk_z;
 	}
-	#if 0
-	if(Part_State == 0){
-		Leg_New_Walk(line_y,walk_z,&Leg[0],&Ramp[0]);
-		Leg_New_Walk(line_y,walk_z,&Leg[3],&Ramp[3]);
-		Leg_Point_RTO_Ramp(-line_y,line_z,&Leg[1],&Ramp[1]);
-		Leg_Point_RTO_Ramp(-line_y,line_z,&Leg[2],&Ramp[2]);
-		for(uint8_t i = 0;i<4;i++){
-			Leg_Angle_Control(&Leg[i]);
-		}
-		if(Slope(&Ramp[0]) == 1.0f && Slope(&Straight_Ramp[1]) == 1.0f &&
-			 Slope(&Ramp[2]) == 1.0f && Slope(&Straight_Ramp[3]) == 1.0f){
-			ResetSlope(&Ramp[0]);
-			ResetSlope(&Ramp[1]);
-			ResetSlope(&Ramp[2]);
-			ResetSlope(&Ramp[3]);
-			Part_State = 1;
-		}
-	}
-	else if(Part_State == 1){
-		Leg_New_Walk(line_y,walk_z,&Leg[1],&Ramp[1]);
-		Leg_New_Walk(line_y,walk_z,&Leg[2],&Ramp[2]);
-		Leg_Point_RTO_Ramp(-line_y,line_z,&Leg[0],&Ramp[0]);
-		Leg_Point_RTO_Ramp(-line_y,line_z,&Leg[3],&Ramp[3]);
-		for(uint8_t i=0;i<4;i++){
-			Leg_Angle_Control(&Leg[i]);
-		}
-		if(Slope(&Ramp[0]) == 1.0f && Slope(&Ramp[1]) == 1.0f &&
-			 Slope(&Ramp[2]) == 1.0f && Slope(&Ramp[3]) == 1.0f){
-			ResetSlope(&Ramp[0]);
-			ResetSlope(&Ramp[1]);
-			ResetSlope(&Ramp[2]);
-			ResetSlope(&Ramp[3]);
-			Part_State = 0;
-			start_flag = 0;								//置位
-			if(Remote_DataPack.L_Y_rocker > 500  || Remote_DataPack.L_Y_rocker < 3500 || Remote_DataPack.R_X_rocker < 500 || Remote_DataPack.R_X_rocker > 3500){ //判断是否继续动作
-				Robot_Move_State_Reset_Stop(Robot);											//状态归位0
-			}
-		}
-	}
-	#else
 	if(Part_State == 0){
 		Leg_New_Walk(line_y,walk_z,&Leg[0],&Ramp[0]);
 		Leg_New_Walk(line_y,walk_z,&Leg[3],&Ramp[3]);
@@ -373,10 +367,10 @@ void Robot_Move_Straight(Robot_Handle *Robot,Leg_Handle *Leg,Ramp_Typedef *Ramp,
 			ResetSlope(&Ramp[3]);
 			if((Remote_DataPack.R_X_rocker > 500 && Remote_DataPack.R_X_rocker < 3500) &&
 				 ((Remote_DataPack.L_Y_rocker < 500 && initial_L_Y < 500) || (Remote_DataPack.L_Y_rocker > 3500 && initial_L_Y > 3500)) ){ //判断是否继续动作
-				Part_State = 3;
+				Part_State = 1;					
 			}
 			else{
-				Part_State = 1;
+				Part_State = 3;					//退出循环
 			}
 		}
 	}
@@ -398,10 +392,12 @@ void Robot_Move_Straight(Robot_Handle *Robot,Leg_Handle *Leg,Ramp_Typedef *Ramp,
 			start_flag = 0;																					//置位
 		}
 	}
-	#endif
 }
 
-
+uint32_t turn_count1;
+uint32_t turn_count2;
+uint32_t turn_count3;
+uint32_t turn_count4;
 /* 拐弯 */
 void Robot_Move_Turn(Robot_Handle *Robot,Leg_Handle *Leg,Ramp_Typedef *Ramp,Dev_Handle *IMU){
 	static uint8_t start_flag;
@@ -425,61 +421,7 @@ void Robot_Move_Turn(Robot_Handle *Robot,Leg_Handle *Leg,Ramp_Typedef *Ramp,Dev_
 		R_Y = initial_R_X > 3500 	? short_y : long_y;
 		start_flag = 1;
 	}
-	#if 0
-	if(Part_State == 0){
-		if(initial_R_X < 500){															//左拐 前左脚先迈
-			Leg_New_Walk(L_Y,walk_z,&Leg[0],&Ramp[0]);
-			Leg_New_Walk(R_Y,walk_z,&Leg[3],&Ramp[3]);
-			Leg_Point_RTO_Ramp(-L_Y,line_z,&Leg[2],&Ramp[2]);
-			Leg_Point_RTO_Ramp(-R_Y,line_z,&Leg[1],&Ramp[1]);
-		}
-		else{																								//右拐 前右脚先迈
-			Leg_New_Walk(L_Y,walk_z,&Leg[2],&Ramp[2]);
-			Leg_New_Walk(R_Y,walk_z,&Leg[1],&Ramp[1]);
-			Leg_Point_RTO_Ramp(-L_Y,line_z,&Leg[0],&Ramp[0]);
-			Leg_Point_RTO_Ramp(-R_Y,line_z,&Leg[3],&Ramp[3]);
-		}
-		for(uint8_t i = 0;i<4;i++){
-			Leg_Angle_Control(&Leg[i]);
-		}
-		if(Slope(&Ramp[0]) == 1.0f && Slope(&Ramp[1]) == 1.0f &&
-			 Slope(&Ramp[2]) == 1.0f && Slope(&Ramp[3]) == 1.0f){
-			for(uint8_t i =0;i<4;i++){
-				ResetSlope(&Ramp[i]);
-			}
-			Part_State = 1;
-		}
-	}
-	else if(Part_State == 1){
-		if(initial_R_X < 500){
-			Leg_New_Walk(L_Y,walk_z,&Leg[2],&Ramp[2]);
-			Leg_New_Walk(R_Y,walk_z,&Leg[1],&Ramp[1]);
-			Leg_Point_RTO_Ramp(-L_Y,line_z,&Leg[0],&Ramp[0]);
-			Leg_Point_RTO_Ramp(-R_Y,line_z,&Leg[3],&Ramp[3]);
-		}
-		else{
-			Leg_New_Walk(L_Y,walk_z,&Leg[0],&Ramp[0]);
-			Leg_New_Walk(R_Y,walk_z,&Leg[3],&Ramp[3]);
-			Leg_Point_RTO_Ramp(-L_Y,line_z,&Leg[2],&Ramp[2]);
-			Leg_Point_RTO_Ramp(-R_Y,line_z,&Leg[1],&Ramp[1]);
-		}
-		for(uint8_t i = 0;i<4;i++){
-			Leg_Angle_Control(&Leg[i]);
-		}
-		if(Slope(&Ramp[0]) == 1.0f && Slope(&Ramp[1]) == 1.0f &&
-			 Slope(&Ramp[2]) == 1.0f && Slope(&Ramp[3]) == 1.0f){
-			for(uint8_t i = 0;i<4;i++){
-				ResetSlope(&Ramp[i]);
-			}
-			Part_State = 0;
-			start_flag = 0;																													//可能检测到换边拐弯信号
-			initial_R_X = Remote_DataPack.R_X_rocker;
-			if(initial_R_X > 500 || initial_R_X < 3500){														//检测到停止信号，状态归位
-				Robot_Move_State_Reset_Stop(Robot);
-			}
-		}
-	}
-	#else
+
 	if(Part_State == 0){
 		if(initial_R_X < 500){															//左拐 前左脚先迈
 			Leg_New_Walk(L_Y,walk_z,&Leg[0],&Ramp[0]);
@@ -583,7 +525,6 @@ void Robot_Move_Turn(Robot_Handle *Robot,Leg_Handle *Leg,Ramp_Typedef *Ramp,Dev_
 			Robot_Move_State_Reset_Stop(Robot);
 		}
 	}
-	#endif
 }
 
 /* 踏步 */
@@ -846,20 +787,20 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 	static uint8_t Div_State;							//状态分态
 	static float line_z = 100.0f;					//腿直线提脚/落脚z
 	static float stand_up_down_z = 80.0f; //抬升高度
-	static float rise_y = 100.0f;					//上爬抬脚y
-	static float rise_z = 50.0f;					//上爬抬脚z
+	static float rise_y = 100.0f;					//上爬抬脚y							//120.0f
+	static float rise_z = 50.0f;					//上爬抬脚z							
 	static float down_y = 100.0f;					//下爬落脚y
 	static float down_z = 50.0f;					//下爬落脚z
 	static float rise_up_z = 30.0f;				//上爬抬脚z
 	
 	
-	static float straight_source_walk_y = 40.0f;//原始直行y
+	static float straight_source_walk_y = 20.0f;//原始直行y
 	static float straight_walk_y;								//直行y
 	static float straight_walk_z = 30.0f;				//直行z
 	
-	static float turn_short_y = 30.0f;					//拐弯短距y
-	static float turn_long_y = 50.0f;						//拐弯长距y
-	static float turn_walk_z = 50.0f;						//拐弯z
+	static float turn_short_y = 20.0f;					//拐弯短距y
+	static float turn_long_y = 30.0f;						//拐弯长距y
+	static float turn_walk_z = 40.0f;						//拐弯z
 	static float turn_walk_l_y;									//拐弯左脚y
 	static float turn_walk_r_y;									//拐弯右脚y
 	
@@ -1345,6 +1286,7 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 			}
 			
 			case Double_Bridge_Back_Down_Event:{
+				
 				/* 前左脚支撑 */
 				if(Part_State == 0){
 					if(Div_State == 0){
@@ -1382,6 +1324,7 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 						}
 					}
 				}
+				
 				/* 站直 */
 				else if(Part_State == 2){
 					if(Div_State == 0){
@@ -1411,6 +1354,7 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 						}
 					}
 				}
+				
 				/* 后左脚下地 */
 				else if(Part_State == 3){
 					if(Div_State == 0){
@@ -1516,6 +1460,45 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 					}
 				}
 				else if(Part_State == 1){
+					Leg_New_Walk(2.0f*straight_walk_y,straight_walk_z,&Leg[1],&Double_Bridge_Straight_Ramp[1]);
+					Leg_New_Walk(2.0f*straight_walk_y,straight_walk_z,&Leg[2],&Double_Bridge_Straight_Ramp[2]);
+					Leg_Point_RTO_Ramp(-2.0f*straight_walk_y,0,&Leg[0],&Double_Bridge_Straight_Ramp[0]);
+					Leg_Point_RTO_Ramp(-2.0f*straight_walk_y,0,&Leg[3],&Double_Bridge_Straight_Ramp[3]);
+					for(uint8_t i = 0;i<4;i++){
+						Leg_Angle_Control(&Leg[i]);
+					}
+					if(Slope(&Double_Bridge_Straight_Ramp[0]) == 1.0f && Slope(&Double_Bridge_Straight_Ramp[1]) == 1.0f &&
+						 Slope(&Double_Bridge_Straight_Ramp[2]) == 1.0f && Slope(&Double_Bridge_Straight_Ramp[3]) == 1.0f){
+						for(uint8_t i = 0;i<4;i++){
+							ResetSlope(&Double_Bridge_Straight_Ramp[i]);
+						}
+						Part_State = 2;
+					}
+				}
+				else if(Part_State == 2){
+					Leg_New_Walk(2.0f*straight_walk_y,straight_walk_z,&Leg[0],&Double_Bridge_Straight_Ramp[0]);
+					Leg_New_Walk(2.0f*straight_walk_y,straight_walk_z,&Leg[3],&Double_Bridge_Straight_Ramp[3]);
+					Leg_Point_RTO_Ramp(-2.0f*straight_walk_y,0,&Leg[1],&Double_Bridge_Straight_Ramp[1]);
+					Leg_Point_RTO_Ramp(-2.0f*straight_walk_y,0,&Leg[2],&Double_Bridge_Straight_Ramp[2]);
+					for(uint8_t i = 0;i<4;i++){
+						Leg_Angle_Control(&Leg[i]);
+					}
+					if(Slope(&Double_Bridge_Straight_Ramp[0]) == 1.0f && Slope(&Double_Bridge_Straight_Ramp[1]) == 1.0f &&
+						 Slope(&Double_Bridge_Straight_Ramp[2]) == 1.0f && Slope(&Double_Bridge_Straight_Ramp[3]) == 1.0f){
+						for(uint8_t i  = 0;i<4;i++){
+							ResetSlope(&Double_Bridge_Straight_Ramp[i]);
+						}
+						Part_State = 3;
+						if((Remote_DataPack.R_X_rocker > 500 && Remote_DataPack.R_X_rocker < 3500) &&
+							 ((Remote_DataPack.L_Y_rocker < 500 && initial_Remote.L_Y_rocker < 500) || (Remote_DataPack.L_Y_rocker > 3500 && initial_Remote.L_Y_rocker > 3500)) ){ //判断是否继续动作
+							Part_State = 1;					
+						}
+						else{
+							Part_State = 3;					//退出循环
+						}
+					}
+				}
+				else if(Part_State == 3){
 					Leg_New_Walk(straight_walk_y,straight_walk_z,&Leg[1],&Double_Bridge_Straight_Ramp[1]);
 					Leg_New_Walk(straight_walk_y,straight_walk_z,&Leg[2],&Double_Bridge_Straight_Ramp[2]);
 					Leg_Point_RTO_Ramp(-straight_walk_y,0,&Leg[0],&Double_Bridge_Straight_Ramp[0]);
@@ -1525,7 +1508,7 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 					}
 					if(Slope(&Double_Bridge_Straight_Ramp[0]) == 1.0f && Slope(&Double_Bridge_Straight_Ramp[1]) == 1.0f &&
 						 Slope(&Double_Bridge_Straight_Ramp[2]) == 1.0f && Slope(&Double_Bridge_Straight_Ramp[3]) == 1.0f){
-						for(uint8_t i = 0;i<4;i++){
+						for(uint8_t i  = 0;i<4;i++){
 							ResetSlope(&Double_Bridge_Straight_Ramp[i]);
 						}
 						start_flag = 0;
@@ -1562,6 +1545,59 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 					}
 				}
 				else if(Part_State == 1){
+					if(initial_Remote.R_X_rocker < 500){
+						Leg_New_Walk(2.0f*turn_walk_l_y,turn_walk_z,&Leg[2],&Double_Bridge_Turn_Ramp[2]);
+						Leg_New_Walk(2.0f*turn_walk_r_y,turn_walk_z,&Leg[1],&Double_Bridge_Turn_Ramp[1]);
+						Leg_Point_RTO_Ramp(-2.0f*turn_walk_l_y,0,&Leg[0],&Double_Bridge_Turn_Ramp[0]);
+						Leg_Point_RTO_Ramp(-2.0f*turn_walk_r_y,0,&Leg[3],&Double_Bridge_Turn_Ramp[3]);
+					}
+					else{
+						Leg_New_Walk(2.0f*turn_walk_l_y,turn_walk_z,&Leg[0],&Double_Bridge_Turn_Ramp[0]);
+						Leg_New_Walk(2.0f*turn_walk_r_y,turn_walk_z,&Leg[3],&Double_Bridge_Turn_Ramp[3]);
+						Leg_Point_RTO_Ramp(-2.0f*turn_walk_l_y,0,&Leg[2],&Double_Bridge_Turn_Ramp[2]);
+						Leg_Point_RTO_Ramp(-2.0f*turn_walk_r_y,0,&Leg[1],&Double_Bridge_Turn_Ramp[1]);
+					}
+					for(uint8_t i = 0;i<4;i++){
+						Leg_Angle_Control(&Leg[i]);
+					}
+					if(Slope(&Double_Bridge_Turn_Ramp[0]) == 1.0f && Slope(&Double_Bridge_Turn_Ramp[1]) == 1.0f &&
+						 Slope(&Double_Bridge_Turn_Ramp[2]) == 1.0f && Slope(&Double_Bridge_Turn_Ramp[3]) == 1.0f){
+						for(uint8_t i = 0;i<4;i++){
+							ResetSlope(&Double_Bridge_Turn_Ramp[i]);
+						}
+						Part_State = 2;
+					}
+				}
+				else if(Part_State == 2){
+					if(initial_Remote.R_X_rocker < 500){
+						Leg_New_Walk(2.0f*turn_walk_l_y,turn_walk_z,&Leg[0],&Double_Bridge_Turn_Ramp[0]);
+						Leg_New_Walk(2.0f*turn_walk_r_y,turn_walk_z,&Leg[3],&Double_Bridge_Turn_Ramp[3]);
+						Leg_Point_RTO_Ramp(-2.0f*turn_walk_l_y,0,&Leg[2],&Double_Bridge_Turn_Ramp[2]);
+						Leg_Point_RTO_Ramp(-2.0f*turn_walk_r_y,0,&Leg[1],&Double_Bridge_Turn_Ramp[1]);
+					}
+					else{
+						Leg_New_Walk(2.0f*turn_walk_l_y,turn_walk_z,&Leg[2],&Double_Bridge_Turn_Ramp[2]);
+						Leg_New_Walk(2.0f*turn_walk_r_y,turn_walk_z,&Leg[1],&Double_Bridge_Turn_Ramp[1]);
+						Leg_Point_RTO_Ramp(-2.0f*turn_walk_l_y,0,&Leg[0],&Double_Bridge_Turn_Ramp[0]);
+						Leg_Point_RTO_Ramp(-2.0f*turn_walk_r_y,0,&Leg[3],&Double_Bridge_Turn_Ramp[3]);
+					}
+					for(uint8_t i = 0;i<4;i++){
+						Leg_Angle_Control(&Leg[i]);
+					}
+					if(Slope(&Double_Bridge_Turn_Ramp[0]) == 1.0f && Slope(&Double_Bridge_Turn_Ramp[1]) == 1.0f &&
+						 Slope(&Double_Bridge_Turn_Ramp[2]) == 1.0f && Slope(&Double_Bridge_Turn_Ramp[3]) == 1.0f){
+						for(uint8_t i = 0;i<4;i++){
+							ResetSlope(&Double_Bridge_Turn_Ramp[i]);
+						}
+						if(((Remote_DataPack.L_Y_rocker < 500 && initial_Remote.L_Y_rocker < 500) || (Remote_DataPack.L_Y_rocker > 3500 && initial_Remote.L_Y_rocker > 3500)) &&
+							 ((Remote_DataPack.R_X_rocker < 500 && initial_Remote.R_X_rocker < 500) || (Remote_DataPack.R_X_rocker > 3500 && initial_Remote.R_X_rocker > 3500))){
+							Part_State = 1;
+						}
+						else
+							Part_State = 3;
+					}
+				}
+				else if(Part_State == 3){
 					if(initial_Remote.R_X_rocker < 500){
 						Leg_New_Walk(turn_walk_l_y,turn_walk_z,&Leg[2],&Double_Bridge_Turn_Ramp[2]);
 						Leg_New_Walk(turn_walk_r_y,turn_walk_z,&Leg[1],&Double_Bridge_Turn_Ramp[1]);
@@ -1812,7 +1848,7 @@ void Robot_Move_Seesaw(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IMU){
 				break;
 			}
 			case Seesaw_Climb_Down_Event:{
-				if(Part_State == 0){		
+				if(Part_State == 0){
 					for(uint8_t i = 0;i<4;i++){
 						Leg_Point_RTO_Ramp(climb_down_posture_y,0,&Leg[i],&Seesaw_Climb_Down_Posture_Ramp[i]);
 						Leg_Angle_Control(&Leg[i]);
@@ -1971,5 +2007,2603 @@ void Robot_Move_Seesaw(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IMU){
 }
 
 void Robot_Move_Stair(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IMU){
+	static uint8_t Part_State;											//状态
+	static uint8_t Div_State;												//状态分态
+	static uint8_t start_flag;											//开始标志
+	static Remote_DataPack_Handle initial_Remote;		//初始状态
+	static float line_z = 100.0f;										//腿直线提脚
+	static float stand_up_down_z = 70.0f;						//上下起身z
+	static float back_up_down_z = 30.0f;						//回归z   line_z - stand_up_down_z 
+	static float rise_y = 100.0f;										//上爬抬脚y				//100.0f
+	static float rise_z = 30.0f;										//上爬抬脚z
+//	static float short_rise_y = 100.0f;							//短距上爬 y
+//	static float long_rise_y	=	220.0f;							//长距上爬 y
+//	static float short_down_y = 100.0f;							//短距下落 y
+//	static float long_down_y	=	220.0f;							//长距下落 y
+	static float down_y = 100.0f;										//下爬落脚y
+	static float down_z = 30.0f;										//下爬落脚z
+//	static float rise_up_z = 30.0f;									//上爬落脚z
 	
+	static float straight_source_walk_y = 20.0f;		//原始直行y
+	static float straight_walk_y;										//直行y
+	static float straight_walk_z = 25.0f;						//直行z
+	
+	static float turn_short_y = 15.0f;							//拐弯短距y
+	static float turn_long_y = 30.0f;								//拐弯长距y
+	static float turn_walk_z = 25.0f;								//拐弯z
+	static float turn_walk_l_y;											//拐弯左脚y
+	static float turn_walk_r_y;											//拐弯右脚y
+	
+	static float circle_walk_y = 30.0f;					//原地自转y
+	static float circle_walk_z = 30.0f;					//原地自转z
+	static float circle_walk_l_y;								//原地自转左脚y
+	static float circle_walk_r_y;								//原地自转右脚y
+	if(!start_flag){
+		/* 里边调度行为 */
+		memcpy(&initial_Remote,&Remote_DataPack,21);
+		#if 0
+		
+		/* 准备/归位状态 */
+		if(initial_Remote.Key.Left_Switch_Down == 0 && Remote_Last_DataPack.Key.Left_Switch_Down && 
+			 (Robot->stair_state == Stair_None_State || Robot->stair_state == Stair_Back_Down_State)){
+			start_flag = 1;
+			if(Robot->stair_state == Stair_None_State){
+				Robot->stair_event = Stair_Start_Event;
+				Robot->stair_state = Stair_Start_State;
+			}
+			else if(Robot->stair_state == Stair_Back_Down_State){
+				Robot->stair_event = Stair_End_Event;
+				Robot->stair_state = Stair_End_State;
+			}
+		}
+		
+		/* 台阶抬前脚 */
+		else if(initial_Remote.Key.Right_Key_Up == 0 && Remote_Last_DataPack.Key.Right_Key_Up &&
+						(Robot->stair_state == Stair_Start_State || Robot->stair_state == Stair_Back_Rise_State)){
+			start_flag = 1;
+			Robot->stair_event = Stair_Front_Rise_Event;
+			Robot->stair_state = Stair_Front_Rise_State;
+		}
+		
+		
+		/* 台阶抬后脚 */
+		else if(initial_Remote.Key.Right_Key_Down == 0 && Remote_Last_DataPack.Key.Right_Key_Down &&
+						Robot->stair_state == Stair_Front_Rise_State){
+			start_flag = 1;
+			Robot->stair_event = Stair_Back_Rise_Event;
+			Robot->stair_state = Stair_Back_Rise_State;
+		}
+		
+		/* 台阶落前脚 */
+		else if(initial_Remote.Key.Right_Key_Left == 0 && Remote_Last_DataPack.Key.Right_Key_Left &&
+						(Robot->stair_state == Stair_Back_Rise_State || Robot->stair_state == Stair_Back_Down_State)){
+			start_flag = 1;
+			Robot->stair_event = Stair_Front_Down_Event;
+			Robot->stair_state = Stair_Front_Down_State;
+		}
+		
+		/* 台阶落后脚 */
+		else if(initial_Remote.Key.Right_Key_Right == 0 && Remote_Last_DataPack.Key.Right_Key_Right &&
+						Robot->stair_state == Stair_Front_Down_State){
+			start_flag = 1;
+			Robot->stair_event = Stair_Back_Down_Event;
+			Robot->stair_state = Stair_Back_Down_State;
+		}
+		#else
+		if(initial_Remote.Key.Right_Key_Up && Remote_Last_DataPack.Key.Right_Key_Up == 0){
+			start_flag = 1;
+			Robot->stair_event = Stair_Climb_Event;
+			if(Robot->Stair_Climb_State == 0){
+				Robot->stair_state = Stair_Start_State;
+			}
+			Robot->Stair_Climb_State++;
+		}
+		#endif
+		/* 直行/转弯 */
+		else if(initial_Remote.L_Y_rocker < 500 || initial_Remote.L_Y_rocker > 3500){
+			start_flag = 1;
+			if(initial_Remote.R_X_rocker > 500 && initial_Remote.R_X_rocker < 3500){
+				straight_walk_y = initial_Remote.L_Y_rocker < 500 ? straight_source_walk_y : - straight_source_walk_y;			//确定前行或后腿
+				Robot->stair_event = Stair_Straight_Event;					//直走
+			}
+			else{
+				turn_walk_l_y = initial_Remote.R_X_rocker < 500 ? turn_short_y : turn_long_y;
+				turn_walk_r_y = initial_Remote.R_X_rocker > 3500 ? turn_short_y : turn_long_y;
+				Robot->stair_event = Stair_Turn_Event;							//转弯
+			}
+		}
+		
+		/* 原地拐弯 */
+		else if(initial_Remote.L_X_rocker < 500 || initial_Remote.L_X_rocker > 3500){
+			start_flag = 1;
+			circle_walk_l_y = initial_Remote.L_X_rocker < 500 ? -circle_walk_y : circle_walk_y;
+			circle_walk_r_y = initial_Remote.L_X_rocker > 3500 ? -circle_walk_y : circle_walk_y;
+			Robot->stair_event = Stair_Circle_Event;							//原地转弯
+		}
+		else{
+			Robot_Move_State_Reset_Stop(Robot);
+		}
+	}
+	else{
+		switch(Robot->stair_event){
+			case Stair_None_Evnet:{
+				break;
+			}
+			case Stair_Start_Event:{
+				
+				/* 台阶准备 */
+				if(Part_State == 0){
+					if(Div_State == 0){
+						Leg_New_Walk(-rise_y,rise_z,&Leg[0],&Stair_Start_End_Ramp[0]);
+						Leg_New_Walk(rise_y,rise_z,&Leg[3],&Stair_Start_End_Ramp[3]);
+						Leg_Angle_Control(&Leg[0]);
+						Leg_Angle_Control(&Leg[3]);
+						if(Slope(&Stair_Start_End_Ramp[0]) == 1.0f && Slope(&Stair_Start_End_Ramp[3]) == 1.0f){
+							ResetSlope(&Stair_Start_End_Ramp[0]);
+							ResetSlope(&Stair_Start_End_Ramp[3]);
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						if(Slope(&Stair_Start_End_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Start_End_Buffer_Ramp);
+							Div_State = 0;
+							Part_State = 1;
+						}
+					}
+				}
+				else if(Part_State == 1){
+					if(Div_State == 0){
+						Leg_New_Walk(-rise_y,rise_z,&Leg[1],&Stair_Start_End_Ramp[1]);
+						Leg_New_Walk(rise_y,rise_z,&Leg[2],&Stair_Start_End_Ramp[2]);
+						Leg_Angle_Control(&Leg[1]);
+						Leg_Angle_Control(&Leg[2]);
+						if(Slope(&Stair_Start_End_Ramp[1]) == 1.0f && Slope(&Stair_Start_End_Ramp[2]) == 1.0f){
+							ResetSlope(&Stair_Start_End_Ramp[1]);
+							ResetSlope(&Stair_Start_End_Ramp[2]);
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						if(Slope(&Stair_Start_End_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Start_End_Buffer_Ramp);
+							Div_State = 0;
+							Part_State = 0;
+							start_flag = 0;
+							Robot->stair_event = Stair_None_Evnet;
+							Robot_Move_State_Reset_Stop(Robot);
+						}
+					}
+				}
+				break;
+			}
+			
+			/* 归位 */
+			case Stair_End_Event:{
+				if(Part_State == 0){
+					if(Div_State == 0){
+						Leg_New_Walk(rise_y,rise_z,&Leg[0],&Stair_Start_End_Ramp[0]);
+						Leg_New_Walk(-rise_y,rise_z,&Leg[3],&Stair_Start_End_Ramp[3]);
+						Leg_Angle_Control(&Leg[0]);
+						Leg_Angle_Control(&Leg[3]);
+						if(Slope(&Stair_Start_End_Ramp[0]) == 1.0f && Slope(&Stair_Start_End_Ramp[3]) == 1.0f){
+							ResetSlope(&Stair_Start_End_Ramp[0]);
+							ResetSlope(&Stair_Start_End_Ramp[3]);
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						if(Slope(&Stair_Start_End_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Start_End_Buffer_Ramp);
+							Div_State = 0;
+							Part_State = 1;
+						}
+					}
+				}
+				else if(Part_State == 1){
+					if(Div_State == 0){
+						Leg_New_Walk(rise_y,rise_z,&Leg[1],&Stair_Start_End_Ramp[1]);
+						Leg_New_Walk(-rise_y,rise_z,&Leg[2],&Stair_Start_End_Ramp[2]);
+						Leg_Angle_Control(&Leg[1]);
+						Leg_Angle_Control(&Leg[2]);
+						if(Slope(&Stair_Start_End_Ramp[1]) == 1.0f && Slope(&Stair_Start_End_Ramp[2]) == 1.0f){
+							ResetSlope(&Stair_Start_End_Ramp[1]);
+							ResetSlope(&Stair_Start_End_Ramp[2]);
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						if(Slope(&Stair_Start_End_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Start_End_Buffer_Ramp);
+							Div_State = 0;
+							Part_State = 0;
+							start_flag = 0;
+							Robot->stair_event = Stair_None_Evnet;
+							Robot->stair_state = Stair_None_State;
+							Robot_Move_State_Reset_Stop(Robot);
+						}
+					}
+				}
+				break;
+			}
+			/* 前脚抬升 */
+			case Stair_Front_Rise_Event:{
+				
+				/* 起身 */
+				if(Part_State == 0){
+					if(Div_State == 0){
+						for(uint8_t i = 0;i<4;i++){
+							Leg_Point_RTO_Ramp(0,-stand_up_down_z,&Leg[i],&Stair_Stand_Up_Down_Ramp[i]);
+							Leg_Angle_Control(&Leg[i]);
+						}
+						if(Slope(&Stair_Stand_Up_Down_Ramp[0]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[1]) == 1.0f &&
+							 Slope(&Stair_Stand_Up_Down_Ramp[2]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[3]) == 1.0f){
+							for(uint8_t i = 0;i<4;i++){
+								ResetSlope(&Stair_Stand_Up_Down_Ramp[i]);
+							}
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+							Div_State = 0;
+							Part_State = 1;
+						}
+					}
+				}
+				
+				/* 前左脚踏步 */
+				else if(Part_State == 1){
+					if(Div_State == 0){
+						Leg_Point_RTO_Ramp(0,line_z,&Leg[0],&Stair_Up_Ramp[0]);
+						Leg_Angle_Control(&Leg[0]);
+						if(Slope(&Stair_Up_Ramp[0]) == 1.0f){
+							ResetSlope(&Stair_Up_Ramp[0]);
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						Leg_New_Walk(rise_y,rise_z,&Leg[0],&Stair_Front_Rise_Ramp[0]);
+						Leg_Angle_Control(&Leg[0]);
+						if(Slope(&Stair_Front_Rise_Ramp[0]) == 1.0f){
+							ResetSlope(&Stair_Front_Rise_Ramp[0]);
+							Div_State = 2;
+						}
+					}
+					else if(Div_State == 2){
+						if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Rise_Buffer_Ramp);
+							Div_State = 0;
+							Part_State = 2;
+						}
+					}
+				}
+				
+				/* 前右脚踏上 */
+				else if(Part_State == 2){
+					if(Div_State == 0){
+						Leg_Point_RTO_Ramp(0,line_z,&Leg[1],&Stair_Up_Ramp[1]);
+						Leg_Angle_Control(&Leg[1]);
+						if(Slope(&Stair_Up_Ramp[1]) == 1.0f){
+							ResetSlope(&Stair_Up_Ramp[1]);
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						Leg_New_Walk(rise_y,rise_z,&Leg[1],&Stair_Front_Rise_Ramp[1]);
+						Leg_Angle_Control(&Leg[1]);
+						if(Slope(&Stair_Front_Rise_Ramp[1]) == 1.0f){
+							ResetSlope(&Stair_Front_Rise_Ramp[1]);
+							Div_State = 2;
+						}
+					}
+					else if(Div_State == 2){
+						if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Rise_Buffer_Ramp);
+							Div_State = 0;
+							Part_State = 3;
+						}
+					}
+				}
+				
+				/* 前脚倾斜，后脚归直 */
+				else if(Part_State == 3){
+					if(Div_State == 0){
+						for(uint8_t i = 0;i<4;i++){
+							Leg_Point_RTO_Ramp(-rise_y,0,&Leg[i],&Stair_Reset_Ramp[i]);
+							Leg_Angle_Control(&Leg[i]);
+						}
+						if(Slope(&Stair_Reset_Ramp[0]) == 1.0f && Slope(&Stair_Reset_Ramp[1]) == 1.0f &&
+							 Slope(&Stair_Reset_Ramp[2]) == 1.0f && Slope(&Stair_Reset_Ramp[3]) == 1.0f){
+							for(uint8_t i = 0;i<4;i++){
+								ResetSlope(&Stair_Reset_Ramp[i]);
+							}
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						if(Slope(&Stair_Reset_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Reset_Buffer_Ramp);
+							Part_State = 0;
+							Div_State = 0;
+							start_flag = 0;
+							Robot->stair_event = Stair_None_Evnet;
+							Robot_Move_State_Reset_Stop(Robot);
+						}
+					}
+				}
+				break;
+			}
+			case Stair_Back_Rise_Event:{
+				
+				/* 踏上后左脚 */
+				if(Part_State == 0){
+					if(Div_State == 0){
+						Leg_Point_RTO_Ramp(0,line_z,&Leg[2],&Stair_Up_Ramp[2]);
+						Leg_Angle_Control(&Leg[2]);
+						if(Slope(&Stair_Up_Ramp[2]) == 1.0f){
+							ResetSlope(&Stair_Up_Ramp[2]);
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						Leg_New_Walk(rise_y,rise_z,&Leg[2],&Stair_Back_Rise_Ramp[2]);
+						Leg_Angle_Control(&Leg[2]);
+						if(Slope(&Stair_Back_Rise_Ramp[2]) == 1.0f){
+							ResetSlope(&Stair_Back_Rise_Ramp[2]);
+							Div_State = 2;
+						}
+					}
+					else if(Div_State == 2){
+						if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Rise_Buffer_Ramp);
+							Div_State = 0;
+							Part_State = 1;
+						}
+					}
+				}
+				
+				/* 踏上后右脚 */
+				else if(Part_State == 1){
+					if(Div_State == 0){
+						Leg_Point_RTO_Ramp(0,line_z,&Leg[3],&Stair_Up_Ramp[3]);
+						Leg_Angle_Control(&Leg[3]);
+						if(Slope(&Stair_Up_Ramp[3]) == 1.0f){
+							ResetSlope(&Stair_Up_Ramp[3]);
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						Leg_New_Walk(rise_y,rise_z,&Leg[3],&Stair_Back_Rise_Ramp[3]);
+						Leg_Angle_Control(&Leg[3]);
+						if(Slope(&Stair_Back_Rise_Ramp[3]) == 1.0f){
+							ResetSlope(&Stair_Back_Rise_Ramp[3]);
+							Div_State = 2;
+						}
+					}
+					else if(Div_State == 2){
+						if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Rise_Buffer_Ramp);
+							Div_State = 0;
+							Part_State = 0;
+							start_flag = 0;
+							Robot->stair_event = Stair_None_Evnet;
+							Robot_Move_State_Reset_Stop(Robot);
+						}
+					}
+				}
+				break;
+			}
+			case Stair_Front_Down_Event:{
+				
+				/* 前左脚下地 */
+				if(Part_State == 0){
+					if(Div_State == 0){
+						Leg_New_Walk(down_y,down_z,&Leg[0],&Stair_Front_Down_Ramp[0]);
+						Leg_Angle_Control(&Leg[0]);
+						if(Slope(&Stair_Front_Down_Ramp[0]) == 1.0f){
+							ResetSlope(&Stair_Front_Down_Ramp[0]);
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						Leg_Point_RTO_Ramp(0,-line_z,&Leg[0],&Stair_Down_Ramp[0]);
+						Leg_Angle_Control(&Leg[0]);
+						if(Slope(&Stair_Down_Ramp[0]) == 1.0f){
+							ResetSlope(&Stair_Down_Ramp[0]);
+							Div_State = 2;
+						}
+					}
+					else if(Div_State == 2){
+						if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Down_Buffer_Ramp);
+							Div_State = 0;
+							Part_State = 1;
+						}
+					}
+				}
+				
+				/* 前右脚下地 */
+				else if(Part_State == 1){
+					if(Div_State == 0){
+						Leg_New_Walk(down_y,down_z,&Leg[1],&Stair_Front_Down_Ramp[1]);
+						Leg_Angle_Control(&Leg[1]);
+						if(Slope(&Stair_Front_Down_Ramp[1]) == 1.0f){
+							ResetSlope(&Stair_Front_Down_Ramp[1]);
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						Leg_Point_RTO_Ramp(0,-line_z,&Leg[1],&Stair_Down_Ramp[1]);
+						Leg_Angle_Control(&Leg[1]);
+						if(Slope(&Stair_Down_Ramp[1]) == 1.0f){
+							ResetSlope(&Stair_Down_Ramp[1]);
+							Div_State = 2;
+						}
+					}
+					else if(Div_State == 2){
+						if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Down_Buffer_Ramp);
+							Div_State = 0;
+							Part_State = 2;
+						}
+					}
+				}
+				
+				/* 前脚倾斜 后脚归直 */
+				else if(Part_State == 2){
+					if(Div_State == 0){
+						for(uint8_t i = 0;i<4;i++){
+							Leg_Point_RTO_Ramp(-down_y,0,&Leg[i],&Stair_Reset_Ramp[i]);
+							Leg_Angle_Control(&Leg[i]);
+						}
+						if(Slope(&Stair_Reset_Ramp[0]) == 1.0f && Slope(&Stair_Reset_Ramp[1]) == 1.0f &&
+							 Slope(&Stair_Reset_Ramp[2]) == 1.0f && Slope(&Stair_Reset_Ramp[3]) == 1.0f){
+							for(uint8_t i = 0;i<4;i++){
+								ResetSlope(&Stair_Reset_Ramp[i]);
+							}
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						if(Slope(&Stair_Reset_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Reset_Buffer_Ramp);
+							Part_State = 0;
+							start_flag = 0;
+							Div_State = 0;
+							Robot->stair_event = Stair_None_Evnet;
+							Robot_Move_State_Reset_Stop(Robot);
+						}
+					}
+				}
+				break;
+			}
+			case Stair_Back_Down_Event:{
+				/* 后左脚下台阶 */
+				if(Part_State == 0){
+					if(Div_State == 0){
+						Leg_New_Walk(down_y,down_z,&Leg[2],&Stair_Back_Down_Ramp[2]);
+						Leg_Angle_Control(&Leg[2]);
+						if(Slope(&Stair_Back_Down_Ramp[2]) == 1.0f){
+							ResetSlope(&Stair_Back_Down_Ramp[2]);
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						Leg_Point_RTO_Ramp(0,-line_z,&Leg[2],&Stair_Down_Ramp[2]);
+						Leg_Angle_Control(&Leg[2]);
+						if(Slope(&Stair_Down_Ramp[2]) == 1.0f){
+							ResetSlope(&Stair_Down_Ramp[2]);
+							Div_State = 2;
+							
+						}
+					}
+					else if(Div_State == 2){
+						if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Down_Buffer_Ramp);
+							Div_State = 0;
+							Part_State = 1;
+							
+						}
+					}
+				}
+				
+				/* 后右脚下台阶 */
+				else if(Part_State == 1){
+					if(Div_State == 0){
+						Leg_New_Walk(down_y,down_z,&Leg[3],&Stair_Back_Down_Ramp[3]);
+						Leg_Angle_Control(&Leg[3]);
+						if(Slope(&Stair_Back_Down_Ramp[3]) == 1.0f){
+							ResetSlope(&Stair_Back_Down_Ramp[3]);
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						Leg_Point_RTO_Ramp(0,-line_z,&Leg[3],&Stair_Down_Ramp[3]);
+						Leg_Angle_Control(&Leg[3]);
+						if(Slope(&Stair_Down_Ramp[3]) == 1.0f){
+							ResetSlope(&Stair_Down_Ramp[3]);
+							Div_State = 2;
+							
+						}
+					}
+					else if(Div_State == 2){
+						if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Down_Buffer_Ramp);
+							Div_State = 0;
+							Part_State = 2;
+						}
+					}
+				}
+				
+				/* 下身 */
+				else if(Part_State == 2){
+					if(Div_State == 0){
+						for(uint8_t i = 0;i<4;i++){
+							Leg_Point_RTO_Ramp(0,line_z,&Leg[i],&Stair_Stand_Up_Down_Ramp[i]);
+							Leg_Angle_Control(&Leg[i]);
+						}
+						if(Slope(&Stair_Stand_Up_Down_Ramp[0]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[1]) == 1.0f &&
+							 Slope(&Stair_Stand_Up_Down_Ramp[2]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[3]) == 1.0f){
+							for(uint8_t i = 0;i<4;i++){
+								ResetSlope(&Stair_Stand_Up_Down_Ramp[i]);
+							}
+							Div_State = 1;
+						}
+					}
+					else if(Div_State == 1){
+						if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+							Div_State = 0;
+							Part_State = 0;
+							start_flag = 0;
+							Robot->stair_event = Stair_None_Evnet;
+							Robot_Move_State_Reset_Stop(Robot);
+						}
+					}
+				}
+				break;
+			}
+			case Stair_Climb_Event:{
+				/* 第一阶段 前脚爬上第一层台阶 */
+				if(Robot->Stair_Climb_State == 1){
+					/* 站直 */
+					
+					/* 起身 */
+					if(Part_State == 0){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(0,-stand_up_down_z,&Leg[i],&Stair_Stand_Up_Down_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Stand_Up_Down_Ramp[0]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Stand_Up_Down_Ramp[2]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Stand_Up_Down_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 1;
+							}
+						}
+					}
+				
+					/* 抬起前左脚 */
+					else if(Part_State == 1){
+						
+						if(Div_State == 0){
+							Leg_Point_RTO_Ramp(0,line_z,&Leg[0],&Stair_Up_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Up_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Up_Ramp[0]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							Leg_New_Walk(rise_y,rise_z,&Leg[0],&Stair_Front_Rise_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Front_Rise_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Front_Rise_Ramp[0]);
+								Div_State = 3;
+							}
+						}
+						else if(Div_State == 3){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 2;
+							}
+						}
+					}
+					
+					/* 抬起前右脚 */
+					else if(Part_State == 2){
+						if(Div_State == 0){
+							Leg_Point_RTO_Ramp(0,line_z,&Leg[1],&Stair_Up_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Up_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Up_Ramp[1]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							Leg_New_Walk(rise_y,rise_z,&Leg[1],&Stair_Front_Rise_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Front_Rise_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Front_Rise_Ramp[1]);
+								Div_State = 3;
+							}
+						}
+						
+						else if(Div_State == 3){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 3;
+							}
+						}
+					}
+					
+					else if(Part_State == 3){
+						if(Div_State == 0){
+							if(Slope(&Stair_Reset_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Reset_Buffer_Ramp);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(-rise_y,0,&Leg[i],&Stair_Reset_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Reset_Ramp[0]) == 1.0f && Slope(&Stair_Reset_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Reset_Ramp[2]) == 1.0f && Slope(&Stair_Reset_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Reset_Ramp[i]);
+								}
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Part_State = 4;
+								Div_State = 0;
+							}
+						}
+					}
+					
+					/* 后左脚回收 */
+					else if(Part_State == 4){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[2],&Stair_Front_Rise_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Front_Rise_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Front_Rise_Ramp[2]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 5;
+							}
+						}
+					}
+				
+					/* 后右脚回收 */
+					else if(Part_State == 5){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[3],&Stair_Front_Rise_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Front_Rise_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Front_Rise_Ramp[3]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 0;
+								start_flag = 0;
+								Robot->stair_event = Stair_None_Evnet;
+								Robot_Move_State_Reset_Stop(Robot);
+							}
+						}
+					}
+				}
+				
+				/* 第二阶段 前脚爬上第二层台阶*/
+				else if(Robot->Stair_Climb_State == 2){
+					/* 起身 */
+					if(Part_State == 0){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(0,-stand_up_down_z,&Leg[i],&Stair_Stand_Up_Down_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Stand_Up_Down_Ramp[0]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Stand_Up_Down_Ramp[2]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Stand_Up_Down_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 1;
+							}
+						}
+					}
+			
+					/* 抬起前左脚 */
+					else if(Part_State ==1){
+						if(Div_State == 0){
+							Leg_Point_RTO_Ramp(0,line_z,&Leg[0],&Stair_Up_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Up_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Up_Ramp[0]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							Leg_New_Walk(rise_y,rise_z,&Leg[0],&Stair_Front_Rise_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Front_Rise_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Front_Rise_Ramp[0]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 2;
+							}
+						}
+					}
+			
+					/* 抬起前右脚 */
+					else if(Part_State == 2){
+						if(Div_State == 0){
+							Leg_Point_RTO_Ramp(0,line_z,&Leg[1],&Stair_Up_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Up_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Up_Ramp[1]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							Leg_New_Walk(rise_y,rise_z,&Leg[1],&Stair_Front_Rise_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Front_Rise_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Front_Rise_Ramp[1]);
+								Div_State = 2;
+							}
+						}
+						
+						else if(Div_State == 2){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 3;
+							}
+						}
+					}
+			
+					/* 站直 */
+					else if(Part_State == 3){
+						if(Div_State == 0){
+							if(Slope(&Stair_Reset_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Reset_Buffer_Ramp);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(-rise_y,0,&Leg[i],&Stair_Reset_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Reset_Ramp[0]) == 1.0f && Slope(&Stair_Reset_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Reset_Ramp[2]) == 1.0f && Slope(&Stair_Reset_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Reset_Ramp[i]);
+								}
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Part_State = 4;
+								Div_State = 0;
+							}
+						}
+					}
+					
+					/* 后左脚回收 */
+					if(Part_State == 4){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[2],&Stair_Front_Rise_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Front_Rise_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Front_Rise_Ramp[2]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 5;
+							}
+						}
+					}
+			
+					/* 后右脚回收 */
+					else if(Part_State == 5){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[3],&Stair_Front_Rise_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Front_Rise_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Front_Rise_Ramp[3]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 0;
+								Robot->stair_event = Stair_None_Evnet;
+								Robot_Move_State_Reset_Stop(Robot);
+								start_flag = 0;
+							}
+						}
+					}
+				}
+				
+				/* 后腿爬至第一层台阶 */
+				else if(Robot->Stair_Climb_State == 3){
+					
+					/* 前左腿支撑 */
+					if(Part_State == 0){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[0],&Stair_Back_Rise_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Back_Rise_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Back_Rise_Ramp[0]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 1;
+							}
+						}
+					}
+					
+					/* 前右脚支撑 */
+					else if(Part_State == 1){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[1],&Stair_Back_Rise_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Back_Rise_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Back_Rise_Ramp[1]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 2;
+							}
+						}
+					}
+					
+					/* 前脚归正，后脚倾斜 */
+					if(Part_State == 2){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(-rise_y,0,&Leg[i],&Stair_Reset_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Reset_Ramp[0]) == 1.0f && Slope(&Stair_Reset_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Reset_Ramp[2]) == 1.0f && Slope(&Stair_Reset_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Reset_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Reset_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Reset_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 3;
+							}
+						}
+					}
+					
+					/* 后左脚踏上 */
+					else if(Part_State == 3){
+						if(Div_State == 0){
+							Leg_Point_RTO_Ramp(0,line_z,&Leg[2],&Stair_Up_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Up_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Up_Ramp[2]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							Leg_New_Walk(rise_y,rise_z,&Leg[2],&Stair_Back_Rise_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Back_Rise_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Back_Rise_Ramp[2]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 4;
+							}
+						}
+					}
+					
+					/* 后右脚踏上 */
+					else if(Part_State == 4){
+						if(Div_State == 0){
+							Leg_Point_RTO_Ramp(0,line_z,&Leg[3],&Stair_Up_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Up_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Up_Ramp[3]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							Leg_New_Walk(rise_y,rise_z,&Leg[3],&Stair_Back_Rise_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Back_Rise_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Back_Rise_Ramp[3]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 5;
+							}
+						}
+					}
+					
+					/* 高度补差 */
+					else if(Part_State == 5){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(0,-back_up_down_z,&Leg[i],&Stair_Stand_Up_Down_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Stand_Up_Down_Ramp[0]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Stand_Up_Down_Ramp[2]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Stand_Up_Down_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 0;
+								start_flag = 0;
+								Robot->stair_event = Stair_None_Evnet;
+								Robot_Move_State_Reset_Stop(Robot);
+							}
+						}
+					}
+					
+				}
+				
+				/* 前脚踏上第三层台阶 */
+				else if(Robot->Stair_Climb_State == 4){
+					
+					/* 起立 */
+					if(Part_State == 0){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(0,-stand_up_down_z,&Leg[i],&Stair_Stand_Up_Down_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Stand_Up_Down_Ramp[0]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Stand_Up_Down_Ramp[2]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Stand_Up_Down_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 1;
+							}
+						}
+					}
+			
+					/* 抬起前左脚 */
+					else if(Part_State ==1){
+						if(Div_State == 0){
+							Leg_Point_RTO_Ramp(0,line_z,&Leg[0],&Stair_Up_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Up_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Up_Ramp[0]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							Leg_New_Walk(rise_y,rise_z,&Leg[0],&Stair_Front_Rise_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Front_Rise_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Front_Rise_Ramp[0]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 2;
+							}
+						}
+					}
+			
+					/* 抬起前右脚 */
+					else if(Part_State == 2){
+						if(Div_State == 0){
+							Leg_Point_RTO_Ramp(0,line_z,&Leg[1],&Stair_Up_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Up_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Up_Ramp[1]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							Leg_New_Walk(rise_y,rise_z,&Leg[1],&Stair_Front_Rise_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Front_Rise_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Front_Rise_Ramp[1]);
+								Div_State = 2;
+							}
+						}
+						
+						else if(Div_State == 2){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 3;
+							}
+						}
+						
+					}
+			
+					/* 站直 */
+					else if(Part_State == 3){
+						if(Div_State == 0){
+							if(Slope(&Stair_Reset_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Reset_Buffer_Ramp);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(-rise_y,0,&Leg[i],&Stair_Reset_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Reset_Ramp[0]) == 1.0f && Slope(&Stair_Reset_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Reset_Ramp[2]) == 1.0f && Slope(&Stair_Reset_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Reset_Ramp[i]);
+								}
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Part_State = 4;
+								Div_State = 0;
+							}
+						}
+					}
+					
+					/* 后左脚回收 */
+					if(Part_State == 4){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[2],&Stair_Front_Rise_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Front_Rise_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Front_Rise_Ramp[2]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 5;
+							}
+						}
+					}
+			
+					/* 后右脚回收 */
+					else if(Part_State == 5){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[3],&Stair_Front_Rise_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Front_Rise_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Front_Rise_Ramp[3]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 0;
+								Robot->stair_event = Stair_None_Evnet;
+								Robot_Move_State_Reset_Stop(Robot);
+								start_flag = 0;
+							}
+						}
+					}
+				}
+				
+				
+				/* 第五阶段 后脚踏上第二层台阶 */
+				else if(Robot->Stair_Climb_State == 5){
+					
+					/* 前左腿支撑 */
+					if(Part_State == 0){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[0],&Stair_Back_Rise_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Back_Rise_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Back_Rise_Ramp[0]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 1;
+							}
+						}
+					}
+					
+					/* 前右脚支撑 */
+					else if(Part_State == 1){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[1],&Stair_Back_Rise_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Back_Rise_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Back_Rise_Ramp[1]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 2;
+							}
+						}
+					}
+					
+					/* 前脚归正，后脚倾斜 */
+					if(Part_State == 2){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(-rise_y,0,&Leg[i],&Stair_Reset_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Reset_Ramp[0]) == 1.0f && Slope(&Stair_Reset_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Reset_Ramp[2]) == 1.0f && Slope(&Stair_Reset_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Reset_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Reset_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Reset_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 3;
+							}
+						}
+					}
+					
+					
+					/* 后左脚踏上 */
+					else if(Part_State == 3){
+						if(Div_State == 0){
+							Leg_Point_RTO_Ramp(0,line_z,&Leg[2],&Stair_Up_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Up_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Up_Ramp[2]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							Leg_New_Walk(rise_y,rise_z,&Leg[2],&Stair_Back_Rise_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Back_Rise_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Back_Rise_Ramp[2]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 4;
+							}
+						}
+					}
+					
+					/* 后右脚踏上 */
+					else if(Part_State == 4){
+						if(Div_State == 0){
+							Leg_Point_RTO_Ramp(0,line_z,&Leg[3],&Stair_Up_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Up_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Up_Ramp[3]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							Leg_New_Walk(rise_y,rise_z,&Leg[3],&Stair_Back_Rise_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Back_Rise_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Back_Rise_Ramp[3]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 5;
+							}
+						}
+					}
+					
+					/* 高度补差 */
+					else if(Part_State == 5){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(0,-back_up_down_z,&Leg[i],&Stair_Stand_Up_Down_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Stand_Up_Down_Ramp[0]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Stand_Up_Down_Ramp[2]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Stand_Up_Down_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 0;
+								start_flag = 0;
+								Robot->stair_event = Stair_None_Evnet;
+								Robot_Move_State_Reset_Stop(Robot);
+							}
+						}
+					}
+				}
+				
+				
+				/* 台阶第六阶段 前腿踏下至第二层台阶 */
+				else if(Robot->Stair_Climb_State == 6){
+					
+					/* 前左脚落地 */
+					if(Part_State == 0){
+						if(Div_State == 0){
+							Leg_New_Walk(down_y,down_z,&Leg[0],&Stair_Front_Down_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Front_Down_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Front_Down_Ramp[0]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							Leg_Point_RTO_Ramp(0,-line_z,&Leg[0],&Stair_Down_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Down_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Down_Ramp[0]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 1;
+							}
+						}
+					}
+					
+					/* 前右脚落地 */
+					else if(Part_State == 1){
+						if(Div_State == 0){
+							Leg_New_Walk(down_y,down_z,&Leg[1],&Stair_Front_Down_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Front_Down_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Front_Down_Ramp[1]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							Leg_Point_RTO_Ramp(0,-line_z,&Leg[1],&Stair_Front_Down_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Front_Down_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Front_Down_Ramp[1]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 2;
+							}
+						}
+					}
+					
+					/* 倾斜 */
+					else if(Part_State == 2){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(-rise_y,0,&Leg[i],&Stair_Reset_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Reset_Ramp[0]) == 1.0f && Slope(&Stair_Reset_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Reset_Ramp[2]) == 1.0f && Slope(&Stair_Reset_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Reset_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Reset_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Reset_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 3;
+							}
+						}
+					}
+					
+					/* 后左脚前移支撑 */
+					else if(Part_State == 3){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[2],&Stair_Front_Down_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Front_Down_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Front_Down_Ramp[2]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 4;
+							}
+						}
+					}
+					
+					/* 后右脚前移支撑 */
+					else if(Part_State == 4){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[3],&Stair_Front_Down_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Front_Down_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Front_Down_Ramp[3]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 0;
+								start_flag = 0;
+								Robot->stair_event = Stair_None_Evnet;
+								Robot_Move_State_Reset_Stop(Robot);
+							}
+						}
+					}
+					
+				}
+				
+				/* 台阶第七阶段 后腿踏上第三层台阶 */
+				else if(Robot->Stair_Climb_State == 7){
+					/* 前左腿支撑 */
+					if(Part_State == 0){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[0],&Stair_Back_Rise_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Back_Rise_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Back_Rise_Ramp[0]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 1;
+							}
+						}
+					}
+					
+					/* 前右腿支撑 */
+					else if(Part_State == 1){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[1],&Stair_Back_Rise_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Back_Rise_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Back_Rise_Ramp[1]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 2;
+							}
+						}
+					}
+					
+					/* 倾斜 */
+					else if(Part_State == 2){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(-rise_y,0,&Leg[i],&Stair_Reset_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Reset_Ramp[0]) == 1.0f && Slope(&Stair_Reset_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Reset_Ramp[2]) == 1.0f && Slope(&Stair_Reset_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Reset_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Reset_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Reset_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 3;
+							}
+						}
+					}
+					
+					/* 后左脚踏上 */
+					else if(Part_State == 3){
+						
+						if(Div_State == 0){
+							Leg_Point_RTO_Ramp(0,line_z,&Leg[2],&Stair_Back_Rise_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Back_Rise_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Back_Rise_Ramp[2]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							Leg_New_Walk(rise_y,rise_z,&Leg[2],&Stair_Back_Rise_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Back_Rise_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Back_Rise_Ramp[2]);
+								Div_State = 2;
+							}
+						}
+						
+						else if(Div_State == 2){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 4;
+							}
+						}
+						
+					}
+					
+					/* 后右脚踏上 */
+					else if(Part_State == 4){
+						
+						if(Div_State == 0){
+							Leg_Point_RTO_Ramp(0,line_z,&Leg[3],&Stair_Back_Rise_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Back_Rise_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Back_Rise_Ramp[3]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							Leg_New_Walk(rise_y,rise_z,&Leg[3],&Stair_Back_Rise_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Back_Rise_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Back_Rise_Ramp[3]);
+								Div_State = 2;
+							}
+						}
+						
+						else if(Div_State == 2){
+							if(Slope(&Stair_Rise_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Rise_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 0;
+								start_flag = 0;
+								Robot->stair_event = Stair_None_Evnet;
+								Robot_Move_State_Reset_Stop(Robot);
+							}
+						}
+					}
+				}
+				
+				
+				/* 前脚踏落至一层台阶 */
+				else if(Robot->Stair_Climb_State == 8){
+					
+					/* 高度补差 */
+					if(Part_State == 0){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(0,back_up_down_z,&Leg[i],&Stair_Stand_Up_Down_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Stand_Up_Down_Ramp[0]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Stand_Up_Down_Ramp[2]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Stand_Up_Down_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+								Div_State = 2;
+							}
+						}
+						
+						else if(Div_State == 2){
+							if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 1;
+							}
+						}
+					}
+					
+					/* 前左脚落下 */
+					if(Part_State == 1){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[0],&Stair_Front_Down_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Front_Down_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Front_Down_Ramp[0]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							Leg_Point_RTO_Ramp(0,-line_z,&Leg[0],&Stair_Down_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Down_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Down_Ramp[0]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 2;
+							}
+						}
+					}
+					
+					/* 前右脚落下 */
+					else if(Part_State == 2){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[1],&Stair_Front_Down_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Front_Down_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Front_Down_Ramp[1]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							Leg_Point_RTO_Ramp(0,-line_z,&Leg[1],&Stair_Down_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Down_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Down_Ramp[1]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 3;
+							}
+						}
+					}
+					
+					/* 归正 */
+					else if(Part_State == 3){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(-rise_y,0,&Leg[i],&Stair_Reset_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Reset_Ramp[0]) == 1.0f && Slope(&Stair_Reset_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Reset_Ramp[2]) == 1.0f && Slope(&Stair_Reset_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Reset_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Reset_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Reset_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 4;
+							}
+						}
+					}
+					
+					/* 后左脚回收 */
+					else if(Part_State == 4){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[2],&Stair_Front_Down_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Front_Down_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Front_Down_Ramp[2]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 5;
+							}
+						}
+					}
+					
+					/* 后右脚回收 */
+					else if(Part_State == 5){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[3],&Stair_Front_Down_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Front_Down_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Front_Down_Ramp[3]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 0;
+								start_flag = 0;
+								Robot->stair_event = Stair_None_Evnet;
+								Robot_Move_State_Reset_Stop(Robot);
+							}
+						}
+					}
+				}
+				
+				/* 后腿落下至第二层台阶 */
+				else if(Robot->Stair_Climb_State == 9){
+					
+					/* 前左脚支撑 */
+					if(Part_State == 0){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[0],&Stair_Back_Down_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Back_Down_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Back_Down_Ramp[0]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 1;
+							}
+						}
+					}
+					
+					/* 前右脚支撑 */
+					else if(Part_State == 1){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[1],&Stair_Back_Down_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Back_Down_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Back_Down_Ramp[1]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 2;
+							}
+						}
+					}
+					
+					/* 归正 */
+					else if(Part_State == 2){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(-rise_y,0,&Leg[i],&Stair_Reset_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Reset_Ramp[0]) == 1.0f && Slope(&Stair_Reset_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Reset_Ramp[2]) == 1.0f && Slope(&Stair_Reset_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Reset_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							if(Slope(&Stair_Reset_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Reset_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 3;
+							}
+						}
+					}
+					
+					/* 后左脚落下 */
+					else if(Part_State == 3){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[2],&Stair_Back_Down_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Back_Down_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Back_Down_Ramp[2]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							Leg_Point_RTO_Ramp(0,-line_z,&Leg[2],&Stair_Down_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Down_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Down_Ramp[2]);
+								Div_State = 2;
+							}
+						}
+						
+						else if(Div_State == 2){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 4;
+							}
+						}
+					}
+					
+					/* 后右脚下地 */
+					else if(Part_State == 4){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[3],&Stair_Back_Down_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Back_Down_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Back_Down_Ramp[3]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							Leg_Point_RTO_Ramp(0,-line_z,&Leg[3],&Stair_Down_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Down_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Down_Ramp[3]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 5;
+							}
+						}
+					}
+					
+					/* 蹲下 */
+					else if(Part_State == 5){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(0,stand_up_down_z,&Leg[i],&Stair_Stand_Up_Down_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Stand_Up_Down_Ramp[0]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Stand_Up_Down_Ramp[2]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Stand_Up_Down_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 0;
+								start_flag = 0;
+								Robot->stair_event = Stair_None_Evnet;
+								Robot_Move_State_Reset_Stop(Robot);
+							}
+						}
+					}
+				}
+				
+				/* 台阶第十阶段 前腿落至地面 */
+				else if(Robot->Stair_Climb_State == 10){
+					
+					/* 高度补差 */
+					if(Part_State == 0){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(0,back_up_down_z,&Leg[i],&Stair_Stand_Up_Down_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Stand_Up_Down_Ramp[0]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Stand_Up_Down_Ramp[2]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Stand_Up_Down_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+								Div_State = 2;
+							}
+						}
+						
+						else if(Div_State == 2){
+							if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 1;
+							}
+						}
+					}
+					
+					/* 前左脚落下 */
+					else if(Part_State == 1){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[0],&Stair_Front_Down_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Front_Down_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Front_Down_Ramp[0]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							Leg_Point_RTO_Ramp(0,-line_z,&Leg[0],&Stair_Down_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Down_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Down_Ramp[0]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 2;
+							}
+						}
+					}
+					
+					/* 前右脚落下 */
+					else if(Part_State == 2){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[1],&Stair_Front_Down_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Front_Down_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Front_Down_Ramp[1]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							Leg_Point_RTO_Ramp(0,-line_z,&Leg[1],&Stair_Down_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Down_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Down_Ramp[1]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 3;
+							}
+						}
+					}
+					
+					/* 归正 */
+					else if(Part_State == 3){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(-rise_y,0,&Leg[i],&Stair_Reset_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Reset_Ramp[0]) == 1.0f && Slope(&Stair_Reset_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Reset_Ramp[2]) == 1.0f && Slope(&Stair_Reset_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Reset_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Reset_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Reset_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 4;
+							}
+						}
+					}
+					
+					/* 后左脚回收 */
+					else if(Part_State == 4){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[2],&Stair_Front_Down_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Front_Down_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Front_Down_Ramp[2]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 5;
+							}
+						}
+					}
+					
+					/* 后右脚回收 */
+					else if(Part_State == 5){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[3],&Stair_Front_Down_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Front_Down_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Front_Down_Ramp[3]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 0;
+								start_flag = 0;
+								Robot->stair_event = Stair_None_Evnet;
+								Robot_Move_State_Reset_Stop(Robot);
+							}
+						}
+					}
+				}
+				
+				/* 台阶第十一阶段 后腿落至第一层台阶 */
+				else if(Robot->Stair_Climb_State == 11){
+					
+					/* 前左脚支撑 */
+					if(Part_State == 0){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[0],&Stair_Back_Down_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Back_Down_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Back_Down_Ramp[0]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 1;
+							}
+						}
+					}
+					
+					/* 前右脚支撑 */
+					else if(Part_State == 1){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[1],&Stair_Back_Down_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Back_Down_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Back_Down_Ramp[1]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 2;
+							}
+						}
+					}
+					
+					/* 归正 */
+					else if(Part_State == 2){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(-rise_y,0,&Leg[i],&Stair_Reset_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Reset_Ramp[0]) == 1.0f && Slope(&Stair_Reset_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Reset_Ramp[2]) == 1.0f && Slope(&Stair_Reset_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Reset_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							if(Slope(&Stair_Reset_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Reset_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 3;
+							}
+						}
+					}
+					
+					/* 后左脚落下 */
+					else if(Part_State == 3){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[2],&Stair_Back_Down_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Back_Down_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Back_Down_Ramp[2]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							Leg_Point_RTO_Ramp(0,-line_z,&Leg[2],&Stair_Down_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Down_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Down_Ramp[2]);
+								Div_State = 2;
+							}
+						}
+						
+						else if(Div_State == 2){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 4;
+							}
+						}
+					}
+					
+					/* 后右脚下地 */
+					else if(Part_State == 4){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[3],&Stair_Back_Down_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Back_Down_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Back_Down_Ramp[3]);
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							Leg_Point_RTO_Ramp(0,-line_z,&Leg[3],&Stair_Down_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Down_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Down_Ramp[3]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 5;
+							}
+						}
+					}
+					
+					/* 蹲下 */
+					else if(Part_State == 5){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(0,stand_up_down_z,&Leg[i],&Stair_Stand_Up_Down_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Stand_Up_Down_Ramp[0]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Stand_Up_Down_Ramp[2]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Stand_Up_Down_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 0;
+								start_flag = 0;
+								Robot->stair_event = Stair_None_Evnet;
+								Robot_Move_State_Reset_Stop(Robot);
+							}
+						}
+					}
+					
+				}
+				
+				/* 台阶第12阶段  后腿落地 */
+				else if(Robot->Stair_Climb_State == 12){
+					/* 前左脚归位 */
+					if(Part_State == 0){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[0],&Stair_Back_Down_Ramp[0]);
+							Leg_Angle_Control(&Leg[0]);
+							if(Slope(&Stair_Back_Down_Ramp[0]) == 1.0f){
+								ResetSlope(&Stair_Back_Down_Ramp[0]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 1;
+							}
+						}
+					}
+					
+					/* 前右脚归位 */
+					else if(Part_State == 1){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[1],&Stair_Back_Down_Ramp[1]);
+							Leg_Angle_Control(&Leg[1]);
+							if(Slope(&Stair_Back_Down_Ramp[1]) == 1.0f){
+								ResetSlope(&Stair_Back_Down_Ramp[1]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 2;
+							}
+						}
+					}
+					
+					/* 倾斜 */
+					else if(Part_State == 2){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(-rise_y,0,&Leg[i],&Stair_Reset_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Reset_Ramp[0]) == 1.0f && Slope(&Stair_Reset_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Reset_Ramp[2]) == 1.0f && Slope(&Stair_Reset_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Reset_Ramp[i]);
+									Div_State = 1;
+								}
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Reset_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Reset_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 3;
+							}
+						}
+					}
+					
+					/* 后左脚下地 */
+					if(Part_State == 3){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[2],&Stair_Back_Down_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Back_Down_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Back_Down_Ramp[2]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							Leg_Point_RTO_Ramp(0,-line_z,&Leg[2],&Stair_Back_Down_Ramp[2]);
+							Leg_Angle_Control(&Leg[2]);
+							if(Slope(&Stair_Back_Down_Ramp[2]) == 1.0f){
+								ResetSlope(&Stair_Back_Down_Ramp[2]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 4;
+							}
+						}
+					}
+					
+					/* 后右脚下地 */
+					else if(Part_State == 4){
+						if(Div_State == 0){
+							Leg_New_Walk(rise_y,rise_z,&Leg[3],&Stair_Back_Down_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Back_Down_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Back_Down_Ramp[3]);
+								Div_State = 1;
+							}
+						}
+						
+						else if(Div_State == 1){
+							Leg_Point_RTO_Ramp(0,-line_z,&Leg[3],&Stair_Back_Down_Ramp[3]);
+							Leg_Angle_Control(&Leg[3]);
+							if(Slope(&Stair_Back_Down_Ramp[3]) == 1.0f){
+								ResetSlope(&Stair_Back_Down_Ramp[3]);
+								Div_State = 2;
+							}
+						}
+						else if(Div_State == 2){
+							if(Slope(&Stair_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 5;
+							}
+						}
+					}
+					
+					/* 下身 */
+					else if(Part_State == 5){
+						if(Div_State == 0){
+							for(uint8_t i = 0;i<4;i++){
+								Leg_Point_RTO_Ramp(0,stand_up_down_z,&Leg[i],&Stair_Stand_Up_Down_Ramp[i]);
+								Leg_Angle_Control(&Leg[i]);
+							}
+							if(Slope(&Stair_Stand_Up_Down_Ramp[0]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[1]) == 1.0f &&
+								 Slope(&Stair_Stand_Up_Down_Ramp[2]) == 1.0f && Slope(&Stair_Stand_Up_Down_Ramp[3]) == 1.0f){
+								for(uint8_t i = 0;i<4;i++){
+									ResetSlope(&Stair_Stand_Up_Down_Ramp[i]);
+								}
+								Div_State = 1;
+							}
+						}
+						else if(Div_State == 1){
+							if(Slope(&Stair_Stand_Up_Down_Buffer_Ramp) == 1.0f){
+								ResetSlope(&Stair_Stand_Up_Down_Buffer_Ramp);
+								Div_State = 0;
+								Part_State = 0;
+								start_flag = 0;
+								Robot->stair_event = Stair_None_Evnet;
+								Robot->Stair_Climb_State = 0;
+								Robot_Move_State_Reset_Stop(Robot);
+							}
+						}
+					}
+					
+				}
+				break;
+			}
+			case Stair_Straight_Event:{
+				if(Part_State == 0){
+					Leg_New_Walk(straight_walk_y,straight_walk_z,&Leg[0],&Stair_Straight_Ramp[0]);
+					Leg_New_Walk(straight_walk_y,straight_walk_z,&Leg[3],&Stair_Straight_Ramp[3]);
+					Leg_Point_RTO_Ramp(-straight_walk_y,0,&Leg[1],&Stair_Straight_Ramp[1]);
+					Leg_Point_RTO_Ramp(-straight_walk_y,0,&Leg[2],&Stair_Straight_Ramp[2]);
+					for(uint8_t i = 0;i<4;i++){
+						Leg_Angle_Control(&Leg[i]);
+					}
+					if(Slope(&Stair_Straight_Ramp[0]) == 1.0f && Slope(&Stair_Straight_Ramp[1]) == 1.0f &&
+						 Slope(&Stair_Straight_Ramp[2]) == 1.0f && Slope(&Stair_Straight_Ramp[3]) == 1.0f){
+						for(uint8_t i  = 0;i<4;i++){
+							ResetSlope(&Stair_Straight_Ramp[i]);
+						}
+						Part_State = 1;
+					}
+				}
+				else if(Part_State == 1){
+					Leg_New_Walk(straight_walk_y,straight_walk_z,&Leg[1],&Stair_Straight_Ramp[1]);
+					Leg_New_Walk(straight_walk_y,straight_walk_z,&Leg[2],&Stair_Straight_Ramp[2]);
+					Leg_Point_RTO_Ramp(-straight_walk_y,0,&Leg[0],&Stair_Straight_Ramp[0]);
+					Leg_Point_RTO_Ramp(-straight_walk_y,0,&Leg[3],&Stair_Straight_Ramp[3]);
+					for(uint8_t i = 0;i<4;i++){
+						Leg_Angle_Control(&Leg[i]);
+					}
+					if(Slope(&Stair_Straight_Ramp[0]) == 1.0f && Slope(&Stair_Straight_Ramp[1]) == 1.0f &&
+						 Slope(&Stair_Straight_Ramp[2]) == 1.0f && Slope(&Stair_Straight_Ramp[3]) == 1.0f){
+						for(uint8_t i = 0;i<4;i++){
+							ResetSlope(&Stair_Straight_Ramp[i]);
+						}
+						start_flag = 0;
+						Part_State = 0;
+						Robot->double_bridge_event = Double_Bridge_None_Event;
+						Robot_Move_State_Reset_Stop(Robot);
+					}
+				}
+//				else if(Part_State == 2){
+//					Leg_New_Walk(2.0f*straight_walk_y,straight_walk_z,&Leg[0],&Stair_Straight_Ramp[0]);
+//					Leg_New_Walk(2.0f*straight_walk_y,straight_walk_z,&Leg[3],&Stair_Straight_Ramp[3]);
+//					Leg_Point_RTO_Ramp(-2.0f*straight_walk_y,0,&Leg[1],&Stair_Straight_Ramp[1]);
+//					Leg_Point_RTO_Ramp(-2.0f*straight_walk_y,0,&Leg[2],&Stair_Straight_Ramp[2]);
+//					for(uint8_t i = 0;i<4;i++){
+//						Leg_Angle_Control(&Leg[i]);
+//					}
+//					if(Slope(&Stair_Straight_Ramp[0]) == 1.0f && Slope(&Stair_Straight_Ramp[1]) == 1.0f &&
+//						 Slope(&Stair_Straight_Ramp[2]) == 1.0f && Slope(&Stair_Straight_Ramp[3]) == 1.0f){
+//						for(uint8_t i  = 0;i<4;i++){
+//							ResetSlope(&Stair_Straight_Ramp[i]);
+//						}
+//						Part_State = 3;
+//						if((Remote_DataPack.R_X_rocker > 500 && Remote_DataPack.R_X_rocker < 3500) &&
+//							 ((Remote_DataPack.L_Y_rocker < 500 && initial_Remote.L_Y_rocker < 500) || (Remote_DataPack.L_Y_rocker > 3500 && initial_Remote.L_Y_rocker > 3500)) ){ //判断是否继续动作
+//							Part_State = 1;					
+//						}
+//						else{
+//							Part_State = 3;					//退出循环
+//						}
+//					}
+//				}
+//				else if(Part_State == 3){
+//					Leg_New_Walk(straight_walk_y,straight_walk_z,&Leg[1],&Stair_Straight_Ramp[1]);
+//					Leg_New_Walk(straight_walk_y,straight_walk_z,&Leg[2],&Stair_Straight_Ramp[2]);
+//					Leg_Point_RTO_Ramp(-straight_walk_y,0,&Leg[0],&Stair_Straight_Ramp[0]);
+//					Leg_Point_RTO_Ramp(-straight_walk_y,0,&Leg[3],&Stair_Straight_Ramp[3]);
+//					for(uint8_t i = 0;i<4;i++){
+//						Leg_Angle_Control(&Leg[i]);
+//					}
+//					if(Slope(&Stair_Straight_Ramp[0]) == 1.0f && Slope(&Stair_Straight_Ramp[1]) == 1.0f &&
+//						 Slope(&Stair_Straight_Ramp[2]) == 1.0f && Slope(&Stair_Straight_Ramp[3]) == 1.0f){
+//						for(uint8_t i  = 0;i<4;i++){
+//							ResetSlope(&Stair_Straight_Ramp[i]);
+//						}
+//						start_flag = 0;
+//						Part_State = 0;
+//						Robot->double_bridge_event = Double_Bridge_None_Event;
+//						Robot_Move_State_Reset_Stop(Robot);
+//					}
+//				}
+				break;
+			}
+			case Stair_Turn_Event:{
+				if(Part_State == 0){
+					if(initial_Remote.R_X_rocker < 500){
+						Leg_New_Walk(turn_walk_l_y,turn_walk_z,&Leg[0],&Stair_Turn_Ramp[0]);
+						Leg_New_Walk(turn_walk_r_y,turn_walk_z,&Leg[3],&Stair_Turn_Ramp[3]);
+						Leg_Point_RTO_Ramp(-turn_walk_l_y,0,&Leg[2],&Stair_Turn_Ramp[2]);
+						Leg_Point_RTO_Ramp(-turn_walk_r_y,0,&Leg[1],&Stair_Turn_Ramp[1]);
+					}
+					else{
+						Leg_New_Walk(turn_walk_l_y,turn_walk_z,&Leg[2],&Stair_Turn_Ramp[2]);
+						Leg_New_Walk(turn_walk_r_y,turn_walk_z,&Leg[1],&Stair_Turn_Ramp[1]);
+						Leg_Point_RTO_Ramp(-turn_walk_l_y,0,&Leg[0],&Stair_Turn_Ramp[0]);
+						Leg_Point_RTO_Ramp(-turn_walk_r_y,0,&Leg[3],&Stair_Turn_Ramp[3]);
+					}
+					for(uint8_t i = 0;i<4;i++){
+						Leg_Angle_Control(&Leg[i]);
+					}
+					if(Slope(&Stair_Turn_Ramp[0]) == 1.0f && Slope(&Stair_Turn_Ramp[1]) == 1.0f &&
+						 Slope(&Stair_Turn_Ramp[2]) == 1.0f && Slope(&Stair_Turn_Ramp[3]) == 1.0f){
+						for(uint8_t i = 0;i<4;i++){
+							ResetSlope(&Stair_Turn_Ramp[i]);
+						}
+						Part_State = 1;
+					}
+				}
+				else if(Part_State == 1){
+					if(initial_Remote.R_X_rocker < 500){
+						Leg_New_Walk(turn_walk_l_y,turn_walk_z,&Leg[2],&Stair_Turn_Ramp[2]);
+						Leg_New_Walk(turn_walk_r_y,turn_walk_z,&Leg[1],&Stair_Turn_Ramp[1]);
+						Leg_Point_RTO_Ramp(turn_walk_l_y,0,&Leg[0],&Stair_Turn_Ramp[0]);
+						Leg_Point_RTO_Ramp(turn_walk_r_y,0,&Leg[3],&Stair_Turn_Ramp[3]);
+					}
+					else{
+						Leg_New_Walk(turn_walk_l_y,turn_walk_z,&Leg[0],&Stair_Turn_Ramp[0]);
+						Leg_New_Walk(turn_walk_r_y,turn_walk_z,&Leg[3],&Stair_Turn_Ramp[3]);
+						Leg_Point_RTO_Ramp(turn_walk_l_y,0,&Leg[2],&Stair_Turn_Ramp[2]);
+						Leg_Point_RTO_Ramp(turn_walk_r_y,0,&Leg[1],&Stair_Turn_Ramp[1]);
+					}
+					for(uint8_t i = 0;i<4;i++){
+						Leg_Angle_Control(&Leg[i]);
+					}
+					if(Slope(&Stair_Turn_Ramp[0]) == 1.0f && Slope(&Stair_Turn_Ramp[1]) == 1.0f &&
+						 Slope(&Stair_Turn_Ramp[2]) == 1.0f && Slope(&Stair_Turn_Ramp[3]) == 1.0f){
+						for(uint8_t i = 0;i<4;i++){
+							ResetSlope(&Stair_Turn_Ramp[i]);
+						}
+						start_flag = 0;
+						Part_State = 0;
+						Robot->stair_event = Stair_None_Evnet;
+						Robot_Move_State_Reset_Stop(Robot);
+					}
+				}
+//				else if(Part_State == 2){
+//					if(initial_Remote.R_X_rocker < 500){
+//						Leg_New_Walk(2.0f*turn_walk_l_y,turn_walk_z,&Leg[0],&Stair_Turn_Ramp[0]);
+//						Leg_New_Walk(2.0f*turn_walk_r_y,turn_walk_z,&Leg[3],&Stair_Turn_Ramp[3]);
+//						Leg_Point_RTO_Ramp(-2.0f*turn_walk_l_y,0,&Leg[2],&Stair_Turn_Ramp[2]);
+//						Leg_Point_RTO_Ramp(-2.0f*turn_walk_r_y,0,&Leg[1],&Stair_Turn_Ramp[1]);
+//					}
+//					else{
+//						Leg_New_Walk(2.0f*turn_walk_l_y,turn_walk_z,&Leg[2],&Stair_Turn_Ramp[2]);
+//						Leg_New_Walk(2.0f*turn_walk_r_y,turn_walk_z,&Leg[1],&Stair_Turn_Ramp[1]);
+//						Leg_Point_RTO_Ramp(-2.0f*turn_walk_l_y,0,&Leg[0],&Stair_Turn_Ramp[0]);
+//						Leg_Point_RTO_Ramp(-2.0f*turn_walk_r_y,0,&Leg[3],&Stair_Turn_Ramp[3]);
+//					}
+//					for(uint8_t i = 0;i<4;i++){
+//						Leg_Angle_Control(&Leg[i]);
+//					}
+//					if(Slope(&Stair_Turn_Ramp[0]) == 1.0f && Slope(&Stair_Turn_Ramp[1]) == 1.0f &&
+//						 Slope(&Stair_Turn_Ramp[2]) == 1.0f && Slope(&Stair_Turn_Ramp[3]) == 1.0f){
+//						for(uint8_t i = 0;i<4;i++){
+//							ResetSlope(&Stair_Turn_Ramp[i]);
+//						}
+//						if(((Remote_DataPack.L_Y_rocker < 500 && initial_Remote.L_Y_rocker < 500) || (Remote_DataPack.L_Y_rocker > 3500 && initial_Remote.L_Y_rocker > 3500)) &&
+//							 ((Remote_DataPack.R_X_rocker < 500 && initial_Remote.R_X_rocker < 500) || (Remote_DataPack.R_X_rocker > 3500 && initial_Remote.R_X_rocker > 3500))){
+//							Part_State = 1;
+//						}
+//						else
+//							Part_State = 3;
+//					}
+//				}
+//				else if(Part_State == 3){
+//					if(initial_Remote.R_X_rocker < 500){
+//						Leg_New_Walk(turn_walk_l_y,turn_walk_z,&Leg[2],&Stair_Turn_Ramp[2]);
+//						Leg_New_Walk(turn_walk_r_y,turn_walk_z,&Leg[1],&Stair_Turn_Ramp[1]);
+//						Leg_Point_RTO_Ramp(-turn_walk_l_y,0,&Leg[0],&Stair_Turn_Ramp[0]);
+//						Leg_Point_RTO_Ramp(-turn_walk_r_y,0,&Leg[3],&Stair_Turn_Ramp[3]);
+//					}
+//					else{
+//						Leg_New_Walk(turn_walk_l_y,turn_walk_z,&Leg[0],&Stair_Turn_Ramp[0]);
+//						Leg_New_Walk(turn_walk_r_y,turn_walk_z,&Leg[3],&Stair_Turn_Ramp[3]);
+//						Leg_Point_RTO_Ramp(-turn_walk_l_y,0,&Leg[2],&Stair_Turn_Ramp[2]);
+//						Leg_Point_RTO_Ramp(-turn_walk_r_y,0,&Leg[1],&Stair_Turn_Ramp[1]);
+//					}
+//					for(uint8_t i = 0;i<4;i++){
+//						Leg_Angle_Control(&Leg[i]);
+//					}
+//					if(Slope(&Stair_Turn_Ramp[0]) == 1.0f && Slope(&Stair_Turn_Ramp[1]) == 1.0f &&
+//						 Slope(&Stair_Turn_Ramp[2]) == 1.0f && Slope(&Stair_Turn_Ramp[3]) == 1.0f){
+//						for(uint8_t i = 0;i<4;i++){
+//							ResetSlope(&Stair_Turn_Ramp[i]);
+//						}
+//						start_flag = 0;
+//						Part_State = 0;
+//						Robot->stair_event = Stair_None_Evnet;
+//						Robot_Move_State_Reset_Stop(Robot);
+//					}
+//				}
+				break;
+			}
+			case Stair_Circle_Event:{
+				if(Part_State == 0){
+					Leg_New_Walk(circle_walk_l_y,circle_walk_z,&Leg[0],&Stair_Circle_Ramp[0]);
+					Leg_New_Walk(circle_walk_r_y,circle_walk_z,&Leg[3],&Stair_Circle_Ramp[3]);
+					Leg_Point_RTO_Ramp(-circle_walk_l_y,0,&Leg[2],&Stair_Circle_Ramp[2]);
+					Leg_Point_RTO_Ramp(-circle_walk_r_y,0,&Leg[1],&Stair_Circle_Ramp[1]);
+					for(uint8_t i = 0;i<4;i++){
+						Leg_Angle_Control(&Leg[i]);
+					}
+					if(Slope(&Stair_Circle_Ramp[0]) == 1.0f && Slope(&Stair_Circle_Ramp[1]) == 1.0f && 
+						 Slope(&Stair_Circle_Ramp[2]) == 1.0f && Slope(&Stair_Circle_Ramp[3]) == 1.0f){
+						for(uint8_t i = 0;i<4;i++){
+							ResetSlope(&Stair_Circle_Ramp[i]);
+						}
+						Part_State = 1;
+					}
+				}
+				else if(Part_State == 1){
+					Leg_New_Walk(circle_walk_l_y,circle_walk_z,&Leg[2],&Stair_Circle_Ramp[2]);
+					Leg_New_Walk(circle_walk_r_y,circle_walk_z,&Leg[1],&Stair_Circle_Ramp[1]);
+					Leg_Point_RTO_Ramp(-circle_walk_l_y,0,&Leg[0],&Stair_Circle_Ramp[0]);
+					Leg_Point_RTO_Ramp(-circle_walk_r_y,0,&Leg[3],&Stair_Circle_Ramp[3]);
+					for(uint8_t i = 0;i<4;i++){
+						Leg_Angle_Control(&Leg[i]);
+					}
+					if(Slope(&Stair_Circle_Ramp[0]) == 1.0f && Slope(&Stair_Circle_Ramp[1]) == 1.0f && 
+						 Slope(&Stair_Circle_Ramp[2]) == 1.0f && Slope(&Stair_Circle_Ramp[3]) == 1.0f){
+						for(uint8_t i = 0;i<4;i++){
+							ResetSlope(&Stair_Circle_Ramp[i]);
+						}
+						Part_State = 0;
+						start_flag = 0;
+						Robot->stair_event = Stair_None_Evnet;
+						Robot_Move_State_Reset_Stop(Robot);
+					}
+				}
+				
+				break;
+			}
+		}
+	}
 }

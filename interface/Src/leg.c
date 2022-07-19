@@ -1,6 +1,6 @@
 #include "leg.h"
 
-#define LEG_DBUG														0   		//是否开启悬挂调试
+#define LEG_DBUG														0    //是否开启悬挂调试
 
 #define LEG_Base_y                          0.0f//初始化y坐标
 #define LEG_Base_z                          0.0f//初始化z坐标

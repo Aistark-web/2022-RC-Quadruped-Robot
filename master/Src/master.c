@@ -63,6 +63,23 @@ Ramp_Typedef Seesaw_Straight_Ramp[4];								//跷跷板直行Ramp
 Ramp_Typedef Seesaw_Turn_Ramp[4];										//跷跷板转弯Ramp
 Ramp_Typedef Seesaw_Circle_Ramp[4];									//跷跷板原地自转Ramp
 
+Ramp_Typedef Stair_Up_Ramp[4];											//台阶 提脚Ramp
+Ramp_Typedef Stair_Start_End_Ramp[4];								//台阶 开始/结束Ramp
+Ramp_Typedef Stair_Start_End_Buffer_Ramp;						//台阶 开始/结束缓冲Ramp
+Ramp_Typedef Stair_Down_Ramp[4];										//台阶 落地Ramp
+Ramp_Typedef Stair_Stand_Up_Down_Ramp[4];						//台阶 上下起身Ramp
+Ramp_Typedef Stair_Stand_Up_Down_Buffer_Ramp;				//台阶 上下起身缓冲Ramp
+Ramp_Typedef Stair_Front_Rise_Ramp[4];							//台阶 前脚抬起Ramp
+Ramp_Typedef Stair_Back_Rise_Ramp[4];								//台阶 后腿抬起Ramp
+Ramp_Typedef Stair_Rise_Buffer_Ramp;								//台阶 抬脚Ramp
+Ramp_Typedef Stair_Front_Down_Ramp[4];							//台阶 前腿落地Ramp
+Ramp_Typedef Stair_Back_Down_Ramp[4];								//台阶 后腿落地Ramp
+Ramp_Typedef Stair_Down_Buffer_Ramp;								//台阶 落地缓冲Ramp
+Ramp_Typedef Stair_Reset_Ramp[4];										//台阶 归位Ramp
+Ramp_Typedef Stair_Reset_Buffer_Ramp;								//台阶 归位缓冲Ramp
+Ramp_Typedef Stair_Straight_Ramp[4];								//台阶 直行Ramp
+Ramp_Typedef Stair_Turn_Ramp[4];										//台阶 拐弯Ramp
+Ramp_Typedef Stair_Circle_Ramp[4];									//台阶 原地自旋Ramp
 
 uint8_t Remote_Data[Remote_Len*2];					//遥控器数据双倍缓冲
 uint8_t IMU_Data[IMU_Len*2];								//IMU数据长度
@@ -76,6 +93,8 @@ Remote_DataPack_Handle Remote_Last_DataPack;//上一次遥控器数据
 Dev_Handle IMU;															//IMU数据
 Robot_Handle Robot;													//机器人状态
 
+
+/* END 定义 */
 
 /* BEGIN 初始化 */
 
@@ -168,7 +187,30 @@ void Robot_init()
 		Seesaw_Circle_Ramp[i].RampTime							=	400;	//跷跷板原地自转Ramp
 		Seesaw_Climb_Buffer_Ramp.RampTime						=	500;	//跷跷板攀爬缓冲
 		Seesaw_Sqat_Buffer_Ramp.RampTime						=	500;	//跷跷板蹲下缓冲
+
+		/* 台阶 */
+		Stair_Start_End_Ramp[i].RampTime						=	500;	//台阶 开始/结束Ramp
+		Stair_Stand_Up_Down_Ramp[i].RampTime				=	500;	//台阶 上下起身Ramp
+		Stair_Stand_Up_Down_Buffer_Ramp.RampTime		= 1000;	//台阶 上下起身缓冲Ramp
+		Stair_Start_End_Buffer_Ramp.RampTime				=	1000;	//台阶 开始/结束缓冲Ramp
+		
+		Stair_Up_Ramp[i].RampTime										=	1000;	//台阶 提脚Ramp
+		Stair_Down_Ramp[i].RampTime									=	1000;	//台阶 落脚Ramp
+		Stair_Front_Rise_Ramp[i].RampTime						=	500;	//台阶 前脚踏上Ramp
+		Stair_Back_Rise_Ramp[i].RampTime						=	500;	//台阶 后腿踏上Ramp
+		Stair_Front_Down_Ramp[i].RampTime						=	500;	//台阶 前腿落下Ramp
+		Stair_Back_Down_Ramp[i].RampTime						=	500;	//台阶 后腿落下Ramp
+		Stair_Rise_Buffer_Ramp.RampTime							=	1000;	//台阶 踏上缓冲Ramp
+		Stair_Down_Buffer_Ramp.RampTime							=	1000;	//台阶 落下缓冲Ramp
+		Stair_Reset_Ramp[i].RampTime								=	2000;	//台阶 位姿归位Ramp
+		Stair_Reset_Buffer_Ramp.RampTime						=	500;	//台阶 位姿归位缓冲Ramp
+		
+		Stair_Straight_Ramp[i].RampTime							=	500;	//台阶 直行Ramp
+		Stair_Turn_Ramp[i].RampTime									=	500;	//台阶 拐弯Ramp
+		Stair_Circle_Ramp[i].RampTime								=	500;	//台阶 自转Ramp
+		
 	}
+
 	
 	/* 绑定腿部电机 */
 	Leg_binding(&Leg[0],&HT_03_MOTOR[0],&HT_03_MOTOR[1],FRONT_LEFT_LEG_ID);
