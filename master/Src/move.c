@@ -127,6 +127,7 @@ void Robot_Check(Robot_Handle *Robot,Remote_DataPack_Handle *Remote)
 							Robot->Move		= Robot_Stair_Move;
 							Robot->State	= Robot_Running_State;
 						}
+						
 						/* 直行/拐弯 */
 						else if((Remote_DataPack.L_Y_rocker < 500 || Remote_DataPack.L_Y_rocker > 3500) && 
 										Robot->seesaw_sqat_state == Seesaw_Stand_State &&
@@ -792,7 +793,11 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 	static float down_y = 100.0f;					//下爬落脚y
 	static float down_z = 50.0f;					//下爬落脚z
 	static float rise_up_z = 30.0f;				//上爬抬脚z
+	static float line_down_z = 110.0f;		//下台阶减轻误差后值
+	static float stand_down_z = 90.0f;		//下台阶降身误差后值
 	
+	static float lost_front_stand_z = 90.0f;				//后腿掉线后重新站立 前脚z
+	static float lost_back_down_z		=	20.0f;				//后腿掉线后重新站立 后脚z
 	
 	static float straight_source_walk_y = 20.0f;//原始直行y
 	static float straight_walk_y;								//直行y
@@ -812,7 +817,7 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 		/* 里边调度行为 */
 		memcpy(&initial_Remote,&Remote_DataPack,21);
 		/* 上双木桥抬前脚 */
-		if(initial_Remote.Key.Right_Key_Up && Remote_Last_DataPack.Key.Right_Key_Up == 0 && 
+		if(initial_Remote.Key.Right_Key_Up == 0 && Remote_Last_DataPack.Key.Right_Key_Up && 
 			 Robot->double_bridge_state == Double_Bridge_None_State){							
 			start_flag = 1;
 			Robot->double_bridge_event = Double_Bridge_Front_Rise_Event;
@@ -820,7 +825,7 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 		}
 		
 		/* 上双木桥抬后脚 */
-		else if(initial_Remote.Key.Right_Key_Down && Remote_Last_DataPack.Key.Right_Key_Down == 0 &&
+		else if(initial_Remote.Key.Right_Key_Down == 0 && Remote_Last_DataPack.Key.Right_Key_Down &&
 						Robot->double_bridge_state == Double_Bridge_Front_Rise_State){				
 			start_flag = 1;
 			Robot->double_bridge_event = Double_Bridge_Back_Rise_Event;
@@ -828,7 +833,7 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 		}
 		
 		/* 下双木桥抬前脚 */
-		else if(initial_Remote.Key.Right_Key_Left && Remote_Last_DataPack.Key.Right_Key_Left == 0 &&
+		else if(initial_Remote.Key.Right_Key_Left == 0 && Remote_Last_DataPack.Key.Right_Key_Left &&
 						Robot->double_bridge_state == Double_Bridge_Back_Rise_State){				
 			start_flag = 1;
 			Robot->double_bridge_event = Double_Bridge_Front_Down_Event;
@@ -836,13 +841,21 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 		}
 		
 		/* 下双木桥抬后脚 */
-		else if(initial_Remote.Key.Right_Key_Right && Remote_Last_DataPack.Key.Right_Key_Right == 0 &&
+		else if(initial_Remote.Key.Right_Key_Right == 0 && Remote_Last_DataPack.Key.Right_Key_Right &&
 						Robot->double_bridge_state == Double_Bridge_Front_Down_State){
 			start_flag = 1;
 			Robot->double_bridge_event = Double_Bridge_Back_Down_Event;
 			Robot->double_bridge_state = Double_Bridge_Back_Down_State;
 		}
 		
+		/* 后腿掉线重新站立 */
+		else if(initial_Remote.Key.Left_Switch_Down == 0 && Remote_Last_DataPack.Key.Left_Switch_Down && 
+						Robot->double_bridge_state == Double_Bridge_None_State){
+			start_flag = 1;
+			Robot->double_bridge_event = Double_Bridge_Lost_Front_Stand_Event;
+			Robot->double_bridge_state = Double_Bridge_Lost_Front_Stand_State;
+		}
+						
 		/* 直行/转弯 */
 		else if(initial_Remote.L_Y_rocker < 500 || initial_Remote.L_Y_rocker > 3500){
 			start_flag = 1;
@@ -908,14 +921,20 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 						}
 					}
 					else if(Div_State == 1){
-						Leg_New_Walk(rise_y,rise_z,&Leg[0],&Double_Bridge_Front_Rise_Ramp[0]);
-						Leg_Angle_Control(&Leg[0]);
-						if(Slope(&Double_Bridge_Front_Rise_Ramp[0]) == 1.0f){
-							ResetSlope(&Double_Bridge_Front_Rise_Ramp[0]);
+						if(Slope(&Double_Bridge_Rise_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Double_Bridge_Rise_Buffer_Ramp);
 							Div_State = 2;
 						}
 					}
 					else if(Div_State == 2){
+						Leg_New_Walk(rise_y,rise_z,&Leg[0],&Double_Bridge_Front_Rise_Ramp[0]);
+						Leg_Angle_Control(&Leg[0]);
+						if(Slope(&Double_Bridge_Front_Rise_Ramp[0]) == 1.0f){
+							ResetSlope(&Double_Bridge_Front_Rise_Ramp[0]);
+							Div_State = 3;
+						}
+					}
+					else if(Div_State == 3){
 						if(Slope(&Double_Bridge_Rise_Buffer_Ramp) == 1.0f){
 							ResetSlope(&Double_Bridge_Rise_Buffer_Ramp);
 							Div_State = 0;
@@ -936,15 +955,21 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 					}
 					
 					else if(Div_State == 1){
+						if(Slope(&Double_Bridge_Rise_Buffer_Ramp) == 1.0f){
+							ResetSlope(&Double_Bridge_Rise_Buffer_Ramp);
+							Div_State = 2;
+						}
+					}
+					else if(Div_State == 2){
 						Leg_New_Walk(rise_y,rise_z,&Leg[1],&Double_Bridge_Front_Rise_Ramp[1]);
 						Leg_Angle_Control(&Leg[1]);
 						if(Slope(&Double_Bridge_Front_Rise_Ramp[1]) == 1.0f){
 							ResetSlope(&Double_Bridge_Front_Rise_Ramp[1]);
-							Div_State = 2;
+							Div_State = 3;
 						}
 					}
 					
-					else if(Div_State == 2){
+					else if(Div_State == 3){
 						if(Slope(&Double_Bridge_Rise_Buffer_Ramp) == 1.0f){
 							ResetSlope(&Double_Bridge_Rise_Buffer_Ramp);
 							Div_State = 0;
@@ -959,7 +984,7 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 						if(Slope(&Double_Bridge_Stand_Up_Down_Buffer_Ramp) == 1.0f){
 							ResetSlope(&Double_Bridge_Stand_Up_Down_Buffer_Ramp);
 							Div_State = 1;
-						}
+						 }
 					}
 					else if(Div_State == 1){
 						for(uint8_t i = 0;i<4;i++){
@@ -1169,7 +1194,7 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 					}
 					
 					else if(Div_State == 1){
-						Leg_Point_RTO_Ramp(0,-line_z,&Leg[0],&Double_Bridge_Down_Ramp[0]);
+						Leg_Point_RTO_Ramp(0,-line_down_z,&Leg[0],&Double_Bridge_Down_Ramp[0]);
 						Leg_Angle_Control(&Leg[0]);
 						if(Slope(&Double_Bridge_Down_Ramp[0]) == 1.0f){
 							ResetSlope(&Double_Bridge_Down_Ramp[0]);
@@ -1197,7 +1222,7 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 						}
 					}
 					else if(Div_State == 1){
-						Leg_Point_RTO_Ramp(0,-line_z,&Leg[1],&Double_Bridge_Down_Ramp[1]);
+						Leg_Point_RTO_Ramp(0,-line_down_z,&Leg[1],&Double_Bridge_Down_Ramp[1]);
 						Leg_Angle_Control(&Leg[1]);
 						if(Slope(&Double_Bridge_Down_Ramp[1]) == 1.0f){
 							ResetSlope(&Double_Bridge_Down_Ramp[1]);
@@ -1367,7 +1392,7 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 					}
 					
 					else if(Div_State == 1){
-						Leg_Point_RTO_Ramp(0,-line_z,&Leg[2],&Double_Bridge_Down_Ramp[2]);
+						Leg_Point_RTO_Ramp(0,-line_down_z,&Leg[2],&Double_Bridge_Down_Ramp[2]);
 						Leg_Angle_Control(&Leg[2]);
 						if(Slope(&Double_Bridge_Down_Ramp[2]) == 1.0f){
 							ResetSlope(&Double_Bridge_Down_Ramp[2]);
@@ -1395,7 +1420,7 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 						}
 					}
 					else if(Div_State == 1){
-						Leg_Point_RTO_Ramp(0,-line_z,&Leg[3],&Double_Bridge_Down_Ramp[3]);
+						Leg_Point_RTO_Ramp(0,-line_down_z,&Leg[3],&Double_Bridge_Down_Ramp[3]);
 						Leg_Angle_Control(&Leg[3]);
 						if(Slope(&Double_Bridge_Down_Ramp[3]) == 1.0f){
 							ResetSlope(&Double_Bridge_Down_Ramp[3]);
@@ -1422,7 +1447,7 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 					else if(Div_State == 1){
 						
 						for(uint8_t i = 0;i<4;i++){
-							Leg_Point_RTO_Ramp(0,stand_up_down_z,&Leg[i],&Double_Bridge_Reset_Ramp[i]);
+							Leg_Point_RTO_Ramp(0,stand_down_z,&Leg[i],&Double_Bridge_Reset_Ramp[i]);
 							Leg_Angle_Control(&Leg[i]);
 						}
 						if(Slope(&Double_Bridge_Reset_Ramp[0]) == 1.0f && Slope(&Double_Bridge_Reset_Ramp[1]) == 1.0f &&
@@ -1664,7 +1689,26 @@ void Robot_Move_Double_bridge(Robot_Handle *Robot,Leg_Handle *Leg,Dev_Handle *IM
 				}
 				break;
 			}
-			
+			case Double_Bridge_Lost_Front_Stand_Event:{
+				Leg_Point_RTO_Ramp(0,-lost_front_stand_z,&Leg[0],&Double_Bridge_Stand_Up_Down_Ramp[0]);
+				Leg_Point_RTO_Ramp(0,-lost_front_stand_z,&Leg[1],&Double_Bridge_Stand_Up_Down_Ramp[1]);
+				Leg_Point_RTO_Ramp(0,lost_back_down_z,&Leg[2],&Double_Bridge_Stand_Up_Down_Ramp[2]);
+				Leg_Point_RTO_Ramp(0,lost_back_down_z,&Leg[3],&Double_Bridge_Stand_Up_Down_Ramp[3]);
+				for(uint8_t i = 0;i<4;i++){
+					Leg_Angle_Control(&Leg[i]);
+				}
+				if(Slope(&Double_Bridge_Stand_Up_Down_Ramp[0]) == 1.0f && Slope(&Double_Bridge_Stand_Up_Down_Ramp[1]) == 1.0f &&
+					 Slope(&Double_Bridge_Stand_Up_Down_Ramp[2]) == 1.0f && Slope(&Double_Bridge_Stand_Up_Down_Ramp[3]) == 1.0f){
+					for(uint8_t i = 0;i<4;i++){
+						ResetSlope(&Double_Bridge_Stand_Up_Down_Ramp[i]);
+					}
+					start_flag = 0;
+					Robot->double_bridge_event = Double_Bridge_None_Event;
+					Robot->double_bridge_state = Double_Bridge_Front_Down_State;
+					Robot_Move_State_Reset_Stop(Robot);
+				}
+				break;
+			}
 		}
 	}
 }

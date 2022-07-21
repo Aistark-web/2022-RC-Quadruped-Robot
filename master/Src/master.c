@@ -81,6 +81,7 @@ Ramp_Typedef Stair_Straight_Ramp[4];								//台阶 直行Ramp
 Ramp_Typedef Stair_Turn_Ramp[4];										//台阶 拐弯Ramp
 Ramp_Typedef Stair_Circle_Ramp[4];									//台阶 原地自旋Ramp
 
+
 uint8_t Remote_Data[Remote_Len*2];					//遥控器数据双倍缓冲
 uint8_t IMU_Data[IMU_Len*2];								//IMU数据长度
 uint8_t CAN_TX_Data[8][8];									//CAN发送数据缓冲
@@ -145,8 +146,8 @@ void Robot_init()
 	
 	for(uint8_t i = 0;i<4;i++){
 		Step_Ramp[i].RampTime = 300;
-		Straight_Ramp[i].RampTime = 500;
-		Turn_Ramp[i].RampTime = 500;
+		Straight_Ramp[i].RampTime = 500;							//500
+		Turn_Ramp[i].RampTime = 500;									//500
 		Circle_Ramp[i].RampTime = 400;
 		Reset_Ramp.RampTime = 200;
 		
@@ -187,7 +188,7 @@ void Robot_init()
 		Seesaw_Circle_Ramp[i].RampTime							=	400;	//跷跷板原地自转Ramp
 		Seesaw_Climb_Buffer_Ramp.RampTime						=	500;	//跷跷板攀爬缓冲
 		Seesaw_Sqat_Buffer_Ramp.RampTime						=	500;	//跷跷板蹲下缓冲
-
+    
 		/* 台阶 */
 		Stair_Start_End_Ramp[i].RampTime						=	500;	//台阶 开始/结束Ramp
 		Stair_Stand_Up_Down_Ramp[i].RampTime				=	500;	//台阶 上下起身Ramp

@@ -26,7 +26,7 @@ typedef enum{
 	Robot_Jump_Move,									//跳跃
 	Robot_Double_bridge_Move,					//双木桥行为(包含多个子行为)
 	Robot_Seesaw_Move,								//跷跷板行为(包括多个子行为)
-	Robot_Stair_Move									//阶梯行为(包扣多个子行为)
+	Robot_Stair_Move,									//阶梯行为(包扣多个子行为)
 }Robot_Move_t;											//运动模式各个运动行为
 
 typedef enum{
@@ -42,7 +42,8 @@ typedef enum{
 	Double_Bridge_Back_Down_Event,		//后退落脚事件
 	Double_Bridge_Straignt_Event,			//双木桥上行走事件
 	Double_Bridge_Turn_Event,					//双目桥上拐弯事件
-	Double_Bridge_Circle_Event				//双木桥上自转事件
+	Double_Bridge_Circle_Event,				//双木桥上自转事件
+	Double_Bridge_Lost_Front_Stand_Event,			//双木桥后腿掉线 前腿挺直事件
 }Double_Bridge_Event_t;
 
 typedef enum{
@@ -50,7 +51,8 @@ typedef enum{
 	Double_Bridge_Front_Rise_State,
 	Double_Bridge_Back_Rise_State,
 	Double_Bridge_Front_Down_State,		
-	Double_Bridge_Back_Down_State
+	Double_Bridge_Back_Down_State,
+	Double_Bridge_Lost_Front_Stand_State
 }Double_Bridge_State_t;
 
 typedef enum{
@@ -84,7 +86,6 @@ typedef enum{
 	Stair_Back_Down_State,						//台阶 后脚下落状态
 	Stair_End_State										//台阶 复位状态(腿部归位，结束台阶爬行状态)
 }Stair_State_t;
-
 
 typedef enum{
 	Stair_None_Evnet,
